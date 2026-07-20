@@ -51,8 +51,12 @@ export function sessionCookie(token, maxAge) {
 export async function readJSON(pathname) {
   try {
     const meta = await head(pathname, { token: BLOB_TOKEN });
-    const r = await fetch(meta.downloadUrl || meta.url, {
-      headers: { authorization: `Bearer ${BLOB_TOKEN}` },
+    // cache-bust: overwritten blobs are CDN-cached, which breaks fresh reads
+    const base = meta.downloadUrl || meta.url;
+    const url = base + (base.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+    const r = await fetch(url, {
+      headers: { authorization: `Bearer ${BLOB_TOKEN}`, 'cache-control': 'no-cache' },
+      cache: 'no-store',
     });
     if (!r.ok) return null;
     return await r.json();
@@ -68,6 +72,7 @@ export async function writeJSON(pathname, data) {
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: 'application/json',
+    cacheControlMaxAge: 0,
   });
 }
 
