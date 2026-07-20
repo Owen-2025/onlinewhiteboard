@@ -133,6 +133,11 @@
     background: transparent; color: var(--muted); font-size: 13px; cursor: pointer;
   }
   .modal .btn:hover { background: var(--bg); }
+  .confirm-actions { display: flex; gap: 10px; }
+  .confirm-actions .btn { flex: 1; margin: 0; }
+  .modal .btn.danger { background: #e03131; border-color: #e03131; color: #fff; }
+  .modal .btn.danger:hover { background: #c92a2a; }
+  #confirmBody { word-break: break-word; }
 
   /* ---------- Presenter mode ---------- */
   body.presenting .toolbar,
@@ -375,6 +380,17 @@
   </button>
 </div>
 
+<div id="confirmOverlay" class="modal-overlay">
+  <div class="modal">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmBody"></p>
+    <div class="confirm-actions">
+      <button class="btn" id="confirmCancel">Cancel</button>
+      <button class="btn danger" id="confirmOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <div id="newBoardOverlay" class="modal-overlay">
   <div class="modal">
     <h3>New board</h3>
@@ -463,9 +479,12 @@ function addPage() {
   toast(`Added page ${pageIdx + 1} of ${pages.length}`);
 }
 
-function deletePage() {
+async function deletePage() {
   if (pages.length === 1) { toast('Can’t delete the only page'); return; }
-  if (state.shapes.length && !confirm(`Delete page ${pageIdx + 1} and its ${state.shapes.length} shape(s)?`)) return;
+  if (state.shapes.length) {
+    const ok = await customConfirm(`Delete page ${pageIdx + 1} and its ${state.shapes.length} shape(s)?`, { title: 'Delete page', okLabel: 'Delete' });
+    if (!ok) return;
+  }
   pages.splice(pageIdx, 1);
   loadPage(Math.min(pageIdx, pages.length - 1));
   scheduleSave();
@@ -1584,6 +1603,8 @@ addEventListener('keydown', e => {
   if (e.key === ' ') { spaceDown = true; updateCursor(); e.preventDefault(); return; }
   if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelection(); return; }
   if (e.key === 'Escape') {
+    if (document.getElementById('confirmOverlay').classList.contains('open')) { settleConfirm(false); return; }
+    if (document.getElementById('newBoardOverlay').classList.contains('open')) { closeNewBoardModal(); return; }
     if (presenting) { togglePresenter(); return; }
     state.selectedIds.clear(); render(); return;
   }
@@ -1934,6 +1955,27 @@ document.getElementById('fileInput').addEventListener('change', e => {
   e.target.value = '';
 });
 
+/* ---------- custom confirm dialog (replaces window.confirm) ---------- */
+let confirmResolve = null;
+function customConfirm(body, { title = 'Are you sure?', okLabel = 'Confirm', danger = true } = {}) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmBody').textContent = body;
+  const okBtn = document.getElementById('confirmOk');
+  okBtn.textContent = okLabel;
+  okBtn.classList.toggle('danger', danger);
+  document.getElementById('confirmOverlay').classList.add('open');
+  return new Promise(resolve => { confirmResolve = resolve; });
+}
+function settleConfirm(result) {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  if (confirmResolve) { confirmResolve(result); confirmResolve = null; }
+}
+document.getElementById('confirmOk').onclick = () => settleConfirm(true);
+document.getElementById('confirmCancel').onclick = () => settleConfirm(false);
+document.getElementById('confirmOverlay').onclick = e => {
+  if (e.target.id === 'confirmOverlay') settleConfirm(false);
+};
+
 /* ---------- new board modal ---------- */
 function openNewBoardModal() {
   menuDropdown.classList.remove('open');
@@ -1954,10 +1996,15 @@ document.getElementById('choiceOpen').onclick = () => {
   document.getElementById('fileInput').click();
 };
 
-document.getElementById('choiceBlank').onclick = () => {
+document.getElementById('choiceBlank').onclick = async () => {
   const hasContent = pages.some(p => (p.shapes || []).length) || state.shapes.length;
-  if (hasContent && !confirm('Start a blank board? Anything not saved will be lost.')) return;
-  closeNewBoardModal();
+  if (hasContent) {
+    closeNewBoardModal();
+    const ok = await customConfirm('Anything not saved will be lost.', { title: 'Start a blank board?', okLabel: 'Start blank' });
+    if (!ok) return;
+  } else {
+    closeNewBoardModal();
+  }
 
   // leave any shared session — a fresh board is personal, not the group's
   if (shareId) {
@@ -1982,10 +2029,11 @@ document.getElementById('choiceBlank').onclick = () => {
   toast('New blank board');
 };
 
-document.getElementById('clearBoard').onclick = () => {
+document.getElementById('clearBoard').onclick = async () => {
   menuDropdown.classList.remove('open');
   if (!state.shapes.length) return;
-  if (!confirm('Clear the whole board? You can undo this.')) return;
+  const ok = await customConfirm('You can undo this afterward.', { title: 'Clear the whole board?', okLabel: 'Clear board' });
+  if (!ok) return;
   pushHistory();
   state.shapes = [];
   state.selectedIds.clear();
