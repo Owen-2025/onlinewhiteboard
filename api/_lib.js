@@ -85,22 +85,50 @@ export async function deleteBlob(pathname) {
    blob can take several seconds to appear in a prefix listing. So instead of
    listing, we keep a small "roster" file (a plain exact-key read, which IS
    consistent) naming which clientIds might be active, and fetch each of
-   those by exact key. */
-const ROSTER_TTL = 30000;    // drop a roster entry if not renewed within this long
-const ROSTER_WRITE_MIN = 3000; // only rewrite the roster this often per client
+   those by exact key.
 
-export async function putPresence(id, clientId, data) {
-  await put(`presence/${id}/${clientId}.json`, JSON.stringify(data), {
-    access: 'private',
+   Presence data (a cursor position, a display name) isn't sensitive, so it's
+   stored as *public* blobs with a predictable URL. That lets reads skip the
+   head()-then-fetch() round trip that private blobs require (head() just to
+   learn a signed download URL) — a read is a single fetch, which matters a
+   lot when this runs on a fast poll loop. */
+let publicBase = null; // cached "https://<store>.public.blob.vercel-storage.com", learned from any write
+
+async function writePublicJSON(pathname, data) {
+  const blob = await put(pathname, JSON.stringify(data), {
+    access: 'public',
     token: BLOB_TOKEN,
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: 'application/json',
     cacheControlMaxAge: 0,
   });
+  if (!publicBase) {
+    const u = new URL(blob.url);
+    publicBase = `${u.protocol}//${u.host}`;
+  }
+}
+
+async function readPublicJSON(pathname) {
+  if (publicBase) {
+    try {
+      const r = await fetch(`${publicBase}/${pathname}?cb=${Date.now()}`, { cache: 'no-store' });
+      if (r.ok) return await r.json();
+      if (r.status === 404) return null;
+    } catch {}
+  }
+  // cold start / not cached yet — fall back to the slower head()+fetch path once
+  return readJSON(pathname);
+}
+
+const ROSTER_TTL = 30000;    // drop a roster entry if not renewed within this long
+const ROSTER_WRITE_MIN = 3000; // only rewrite the roster this often per client
+
+export async function putPresence(id, clientId, data) {
+  await writePublicJSON(`presence/${id}/${clientId}.json`, data);
 
   const rosterPath = `presence/${id}/_roster.json`;
-  const roster = (await readJSON(rosterPath)) || {};
+  const roster = (await readPublicJSON(rosterPath)) || {};
   const now = Date.now();
   const lastWritten = roster[clientId];
   if (lastWritten == null || now - lastWritten > ROSTER_WRITE_MIN) {
@@ -108,14 +136,14 @@ export async function putPresence(id, clientId, data) {
     for (const cid of Object.keys(roster)) {
       if (now - roster[cid] > ROSTER_TTL) delete roster[cid];
     }
-    await writeJSON(rosterPath, roster);
+    await writePublicJSON(rosterPath, roster);
   }
 }
 
 export async function listPresences(id) {
-  const roster = (await readJSON(`presence/${id}/_roster.json`)) || {};
+  const roster = (await readPublicJSON(`presence/${id}/_roster.json`)) || {};
   const clientIds = Object.keys(roster);
-  const results = await Promise.all(clientIds.map(cid => readJSON(`presence/${id}/${cid}.json`)));
+  const results = await Promise.all(clientIds.map(cid => readPublicJSON(`presence/${id}/${cid}.json`)));
   return results.filter(Boolean);
 }
 
@@ -123,10 +151,10 @@ export async function deletePresence(id, clientId) {
   try { await del(`presence/${id}/${clientId}.json`, { token: BLOB_TOKEN }); } catch {}
   try {
     const rosterPath = `presence/${id}/_roster.json`;
-    const roster = await readJSON(rosterPath);
+    const roster = await readPublicJSON(rosterPath);
     if (roster && clientId in roster) {
       delete roster[clientId];
-      await writeJSON(rosterPath, roster);
+      await writePublicJSON(rosterPath, roster);
     }
   } catch {}
 }
