@@ -223,6 +223,8 @@
     <button class="menu-item" id="importJson"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>Open file…</button>
     <button class="menu-item" id="insertImage"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="14" rx="2"/><circle cx="7.5" cy="10.5" r="1.3"/><path d="M17 15.5l-4-4-8 8.5"/><line x1="19" y1="2" x2="19" y2="8"/><line x1="16" y1="5" x2="22" y2="5"/></svg>Insert image…</button>
     <div class="menu-sep"></div>
+    <button class="menu-item" id="shareBtn"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg><span id="shareLabel">Share &amp; collaborate</span><span class="shortcut" id="shareStatus"></span></button>
+    <div class="menu-sep"></div>
     <button class="menu-item" id="lockSel"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Lock selection <span class="shortcut">⌘L</span></button>
     <button class="menu-item" id="lockRef"><svg viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg>Lock as reference</button>
     <button class="menu-item" id="unlockAll"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.7"/></svg>Unlock all <span class="shortcut">⌘⇧L</span></button>
@@ -437,7 +439,8 @@ let marquee = null;
 let resizeHandle = null;
 let handleRects = [];
 let resizeOrig = null; // {bounds, shapes JSON}
-const HANDLE_CURSORS = { nw:'nwse-resize', se:'nwse-resize', ne:'nesw-resize', sw:'nesw-resize', n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize', rot:'grab' };
+const HANDLE_CURSORS = { nw:'nwse-resize', se:'nwse-resize', ne:'nesw-resize', sw:'nesw-resize', n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize', rot:'grab', radius:'crosshair' };
+let radiusOrig = null; // {shape, snapshot}
 let rotateOrig = null; // {center, startAngle, shapes JSON}
 
 function rotateShapes(origShapes, center, dA) {
@@ -579,6 +582,7 @@ function scheduleSave() {
   saveTimer = setTimeout(() => {
     try {
       stashCurrentPage();
+      if (shareId) { scheduleSharePush(); return; } // shared boards live on the server, not in personal storage
       const slim = pages.map(p => ({ name: p.name, shapes: p.shapes || [], panX: p.panX || 0, panY: p.panY || 0, zoom: p.zoom || 1 }));
       idbSet('doc', { pages: slim, pageIdx, snap: state.snap, dark: !!state.dark })
         .catch(() => toast('Warning: could not save board'));
@@ -723,6 +727,11 @@ function resize() {
   render();
 }
 
+function rectRadius(s, b) {
+  if (s.radius != null) return Math.max(0, Math.min(s.radius, b.w / 2, b.h / 2));
+  return Math.min(8, b.w / 4, b.h / 4);
+}
+
 function drawShape(c, s) {
   const rotated = !!s.rotation;
   if (rotated) {
@@ -758,7 +767,7 @@ function drawShape(c, s) {
     }
   } else if (s.type === 'rect') {
     const b = shapeBounds(s);
-    const r = Math.min(8, b.w / 4, b.h / 4);
+    const r = rectRadius(s, b);
     c.beginPath();
     c.roundRect(b.x, b.y, b.w, b.h, r);
     if (s.fill && s.fill !== 'transparent') { c.fillStyle = s.fill; c.fill(); }
@@ -918,6 +927,27 @@ function render() {
       ctx.arc(rx, ry, 5, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
       handleRects.push({ id: 'rot', x: rx, y: ry });
+
+      // corner-radius handle (single unrotated rectangle, Illustrator-style)
+      const selShapes = state.shapes.filter(s => state.selectedIds.has(s.id));
+      if (selShapes.length === 1 && selShapes[0].type === 'rect' && !selShapes[0].rotation) {
+        const s0 = selShapes[0];
+        const b = shapeBounds(s0);
+        const r = rectRadius(s0, b);
+        const inset = Math.max(r, 12 / state.zoom);
+        const hp = toScreen(b.x + inset, b.y + inset);
+        ctx.strokeStyle = '#4f6df5';
+        ctx.fillStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(hp.x, hp.y, 4.5, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#4f6df5';
+        ctx.beginPath();
+        ctx.arc(hp.x, hp.y, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        handleRects.push({ id: 'radius', x: hp.x, y: hp.y });
+      }
     }
   } else {
     handleRects = [];
@@ -1141,6 +1171,12 @@ board.addEventListener('pointerdown', e => {
   } else if (state.tool === 'select') {
     // resize handles take priority over shape hits
     const h = state.selectedIds.size ? handleAt(e.clientX, e.clientY) : null;
+    if (h === 'radius') {
+      const s0 = state.shapes.find(s => state.selectedIds.has(s.id));
+      action = 'radius';
+      radiusOrig = { shape: s0, snapshot: JSON.stringify(state.shapes) };
+      return;
+    }
     if (h === 'rot') {
       action = 'rotate';
       const b = selectionBounds();
@@ -1268,6 +1304,12 @@ board.addEventListener('pointermove', e => {
     }
     state.shapes = scaleShapes(resizeOrig.shapes, b0, { x, y, w, h });
     render();
+  } else if (action === 'radius') {
+    const s0 = radiusOrig.shape;
+    const b = shapeBounds(s0);
+    const d = Math.min(wp.x - b.x, wp.y - b.y);
+    s0.radius = Math.max(0, Math.min(d, b.w / 2, b.h / 2));
+    render();
   } else if (action === 'rotate') {
     const { center, startAngle } = rotateOrig;
     let dA = Math.atan2(wp.y - center.y, wp.x - center.x) - startAngle;
@@ -1315,6 +1357,15 @@ board.addEventListener('pointerup', e => {
       scheduleSave();
     }
     resizeOrig = null; resizeHandle = null;
+  } else if (action === 'radius') {
+    if (radiusOrig && radiusOrig.snapshot !== JSON.stringify(state.shapes)) {
+      undoStack.push(radiusOrig.snapshot);
+      if (undoStack.length > 100) undoStack.shift();
+      redoStack = [];
+      updateHistoryButtons();
+      scheduleSave();
+    }
+    radiusOrig = null;
   } else if (action === 'rotate') {
     if (rotateOrig && rotateOrig.snapshot !== JSON.stringify(state.shapes)) {
       undoStack.push(rotateOrig.snapshot);
@@ -1748,7 +1799,7 @@ function shapeToSVGInner(s) {
   }
   if (s.type === 'rect') {
     const b = shapeBounds(s);
-    const r = Math.min(8, b.w / 4, b.h / 4);
+    const r = rectRadius(s, b);
     return `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="${r}" fill="${fill}" ${common}/>`;
   }
   if (s.type === 'ellipse') {
@@ -1930,6 +1981,124 @@ document.getElementById('toBack').onclick = () => { reorderSelection('back'); me
 document.getElementById('undoBtn').onclick = undo;
 document.getElementById('redoBtn').onclick = redo;
 
+/* ---------- realtime collaboration (shared boards) ---------- */
+let shareId = null;
+let shareRev = 0;
+let sharePushTimer = null;
+let sharePollTimer = null;
+let sharePushing = false;
+
+function updateShareUI() {
+  document.getElementById('shareLabel').textContent = shareId ? 'Copy share link' : 'Share & collaborate';
+  document.getElementById('shareStatus').textContent = shareId ? 'live ●' : '';
+}
+
+function shareLink() { return location.origin + '/app?share=' + shareId; }
+
+function applyRemoteDoc(doc) {
+  const keepUndo = undoStack, keepRedo = redoStack;
+  pages = doc.pages;
+  pageIdx = Math.min(pageIdx, pages.length - 1);
+  const p = pages[pageIdx];
+  state.shapes = p.shapes || [];
+  // deliberately keep this client's own pan/zoom — every collaborator has their own viewport
+  uid = Math.max(uid, pages.reduce((m, pg) => (pg.shapes || []).reduce((m2, s) => Math.max(m2, s.id || 0), m), 0) + 1);
+  undoStack = keepUndo; redoStack = keepRedo;
+  state.selectedIds = new Set([...state.selectedIds].filter(id => state.shapes.some(s => s.id === id)));
+  updatePageBar();
+  render();
+}
+
+function scheduleSharePush() {
+  clearTimeout(sharePushTimer);
+  sharePushTimer = setTimeout(async () => {
+    if (!shareId) return;
+    sharePushing = true;
+    try {
+      const r = await fetch('/api/share', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: shareId, doc: currentDoc() }),
+      });
+      const d = await r.json();
+      if (d.rev) shareRev = d.rev;
+    } catch {}
+    sharePushing = false;
+  }, 600);
+}
+
+async function sharePoll() {
+  if (!shareId || sharePushing) return;
+  try {
+    const r = await fetch(`/api/share?id=${shareId}&rev=${shareRev}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    // don't yank the board out from under an in-progress gesture or text edit
+    if (d.doc && d.rev > shareRev && !action && !editingShape && textEditor.style.display !== 'block') {
+      shareRev = d.rev;
+      applyRemoteDoc(d.doc);
+    }
+  } catch {}
+}
+
+function startPolling() {
+  clearInterval(sharePollTimer);
+  sharePollTimer = setInterval(sharePoll, 2000);
+  updateShareUI();
+}
+
+async function startSharing() {
+  try {
+    const r = await fetch('/api/share', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ doc: currentDoc() }),
+    });
+    const d = await r.json();
+    if (!d.id) throw new Error();
+    shareId = d.id;
+    shareRev = d.rev;
+    uid += Math.floor(Math.random() * 1e6); // avoid shape-id collisions between collaborators
+    history.replaceState(null, '', '/app?share=' + shareId);
+    startPolling();
+    await navigator.clipboard.writeText(shareLink()).catch(() => {});
+    toast('Link copied — anyone with it can draw with you live');
+  } catch {
+    toast('Could not start sharing — are you online?');
+  }
+}
+
+async function collabJoin(id) {
+  try {
+    const r = await fetch(`/api/share?id=${id}&rev=0`);
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    shareId = id;
+    shareRev = d.rev;
+    uid = 1;
+    pageIdx = Math.min(d.doc.pageIdx || 0, d.doc.pages.length - 1);
+    applyRemoteDoc(d.doc);
+    uid += Math.floor(Math.random() * 1e6);
+    startPolling();
+    toast('Joined shared board — changes sync live');
+    return true;
+  } catch {
+    toast('Shared board not found');
+    history.replaceState(null, '', '/app');
+    return false;
+  }
+}
+
+document.getElementById('shareBtn').onclick = async () => {
+  menuDropdown.classList.remove('open');
+  if (shareId) {
+    await navigator.clipboard.writeText(shareLink()).catch(() => {});
+    toast('Share link copied');
+  } else {
+    startSharing();
+  }
+};
+
 /* ---------- cloud sync ---------- */
 let cloudUser = null;
 let cloudTimer = null;
@@ -2034,7 +2203,12 @@ loadSaved().finally(() => {
   updateHistoryButtons();
   document.getElementById('zoomLevel').textContent = Math.round(state.zoom * 100) + '%';
   render();
-  cloudInit();
+  const shareParam = new URLSearchParams(location.search).get('share');
+  if (shareParam) {
+    collabJoin(shareParam).then(ok => { if (!ok) cloudInit(); });
+  } else {
+    cloudInit();
+  }
 });
 </script>
 </body>
