@@ -137,7 +137,28 @@
   .confirm-actions .btn { flex: 1; margin: 0; }
   .modal .btn.danger { background: #e03131; border-color: #e03131; color: #fff; }
   .modal .btn.danger:hover { background: #c92a2a; }
-  #confirmBody { word-break: break-word; }
+  .modal .btn.primary-modal { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .modal .btn.primary-modal:hover { filter: brightness(1.08); }
+  #confirmBody, #promptBody { word-break: break-word; }
+  #promptInput {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; background: var(--bg); color: var(--text); outline: none; margin-bottom: 14px;
+  }
+  #promptInput:focus { border-color: var(--accent); }
+
+  /* ---------- realtime collaboration: cursors & creation badges ---------- */
+  #cursorLayer { position: fixed; inset: 0; z-index: 15; overflow: hidden; pointer-events: none; }
+  .remote-cursor { position: absolute; top: 0; left: 0; will-change: transform; transition: transform 90ms linear; }
+  .remote-cursor svg { display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
+  .cursor-label {
+    position: absolute; left: 15px; top: 13px; white-space: nowrap; font-size: 11px; font-weight: 600;
+    color: #fff; padding: 2px 7px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  }
+  .creator-badge {
+    position: absolute; font-size: 11px; font-weight: 600; color: #fff; padding: 2px 7px;
+    border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,.25); white-space: nowrap;
+    transform: translate(0, -22px); opacity: 1; transition: opacity .6s ease;
+  }
 
   /* ---------- Presenter mode ---------- */
   body.presenting .toolbar,
@@ -258,6 +279,7 @@
     <button class="menu-item" id="insertImage"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="14" rx="2"/><circle cx="7.5" cy="10.5" r="1.3"/><path d="M17 15.5l-4-4-8 8.5"/><line x1="19" y1="2" x2="19" y2="8"/><line x1="16" y1="5" x2="22" y2="5"/></svg>Insert image…</button>
     <div class="menu-sep"></div>
     <button class="menu-item" id="shareBtn"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg><span id="shareLabel">Share &amp; collaborate</span><span class="shortcut" id="shareStatus"></span></button>
+    <button class="menu-item" id="renameItem"><svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg><span id="renameLabel">You appear as: …</span></button>
     <div class="menu-sep"></div>
     <button class="menu-item" id="lockSel"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Lock selection <span class="shortcut">⌘L</span></button>
     <button class="menu-item" id="lockRef"><svg viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg>Lock as reference</button>
@@ -390,6 +412,20 @@
     </div>
   </div>
 </div>
+
+<div id="promptOverlay" class="modal-overlay">
+  <div class="modal">
+    <h3 id="promptTitle">Your name</h3>
+    <p id="promptBody"></p>
+    <input id="promptInput" type="text" maxlength="24">
+    <div class="confirm-actions">
+      <button class="btn" id="promptCancel">Cancel</button>
+      <button class="btn primary-modal" id="promptOk">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="cursorLayer"></div>
 
 <div id="newBoardOverlay" class="modal-overlay">
   <div class="modal">
@@ -1053,6 +1089,8 @@ function render() {
     ctx.fillRect(x, y, w, h);
     ctx.strokeRect(x, y, w, h);
   }
+
+  renderCursors();
 }
 
 /* ---------- text tool ---------- */
@@ -1125,7 +1163,7 @@ function commitTextEdit() {
     pushHistory();
     const s = { id: uid++, type: 'text', x: wx, y: wy, text, fontSize, stroke: state.strokeColor, strokeWidth: 0, opacity: state.opacity, w: 0, h: 0 };
     measureText(s);
-    state.shapes.push(s);
+    state.shapes.push(tagOwner(s));
   }
   render(); scheduleSave();
 }
@@ -1228,7 +1266,7 @@ board.addEventListener('pointerdown', e => {
     const fill = (state.fillColor && state.fillColor !== 'transparent') ? state.fillColor : '#ffec99';
     const sp = snapPt({ x: wp.x - 90, y: wp.y - 90 });
     const s = { id: uid++, type: 'sticky', x: sp.x, y: sp.y, w: 180, h: 180, fill, fontSize: 18, text: '', stroke: '#33322d', strokeWidth: 0, opacity: state.opacity };
-    state.shapes.push(s);
+    state.shapes.push(tagOwner(s));
     render(); scheduleSave();
     action = null;
     setTool('select');
@@ -1401,7 +1439,7 @@ board.addEventListener('pointerup', e => {
     const tooSmall = drawing.type !== 'pen' && b.w < 2 / state.zoom && b.h < 2 / state.zoom;
     if (!tooSmall) {
       pushHistory();
-      state.shapes.push(drawing);
+      state.shapes.push(tagOwner(drawing));
       scheduleSave();
     }
     drawing = null;
@@ -1604,6 +1642,7 @@ addEventListener('keydown', e => {
   if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelection(); return; }
   if (e.key === 'Escape') {
     if (document.getElementById('confirmOverlay').classList.contains('open')) { settleConfirm(false); return; }
+    if (document.getElementById('promptOverlay').classList.contains('open')) { settlePrompt(null); return; }
     if (document.getElementById('newBoardOverlay').classList.contains('open')) { closeNewBoardModal(); return; }
     if (presenting) { togglePresenter(); return; }
     state.selectedIds.clear(); render(); return;
@@ -1681,7 +1720,7 @@ function pasteShapes(shapes) {
     const c = JSON.parse(JSON.stringify(s));
     c.id = uid++;
     translateShape(c, off, off);
-    return c;
+    return tagOwner(c);
   });
   state.shapes.push(...clones);
   setTool('select');
@@ -1698,7 +1737,7 @@ function duplicateSelection() {
     const c = JSON.parse(JSON.stringify(s));
     c.id = uid++;
     translateShape(c, 16, 16);
-    clones.push(c);
+    clones.push(tagOwner(c));
   }
   state.shapes.push(...clones);
   state.selectedIds = new Set(clones.map(c => c.id));
@@ -1976,6 +2015,31 @@ document.getElementById('confirmOverlay').onclick = e => {
   if (e.target.id === 'confirmOverlay') settleConfirm(false);
 };
 
+/* ---------- custom prompt dialog (replaces window.prompt) ---------- */
+let promptResolve = null;
+function customPrompt(body, { title = 'Rename', okLabel = 'Save', value = '' } = {}) {
+  document.getElementById('promptTitle').textContent = title;
+  document.getElementById('promptBody').textContent = body;
+  document.getElementById('promptOk').textContent = okLabel;
+  const input = document.getElementById('promptInput');
+  input.value = value;
+  document.getElementById('promptOverlay').classList.add('open');
+  setTimeout(() => { input.focus(); input.select(); }, 30);
+  return new Promise(resolve => { promptResolve = resolve; });
+}
+function settlePrompt(result) {
+  document.getElementById('promptOverlay').classList.remove('open');
+  if (promptResolve) { promptResolve(result); promptResolve = null; }
+}
+document.getElementById('promptOk').onclick = () => settlePrompt(document.getElementById('promptInput').value.trim() || null);
+document.getElementById('promptCancel').onclick = () => settlePrompt(null);
+document.getElementById('promptOverlay').onclick = e => {
+  if (e.target.id === 'promptOverlay') settlePrompt(null);
+};
+document.getElementById('promptInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); settlePrompt(document.getElementById('promptInput').value.trim() || null); }
+});
+
 /* ---------- new board modal ---------- */
 function openNewBoardModal() {
   menuDropdown.classList.remove('open');
@@ -2008,8 +2072,7 @@ document.getElementById('choiceBlank').onclick = async () => {
 
   // leave any shared session — a fresh board is personal, not the group's
   if (shareId) {
-    clearInterval(sharePollTimer);
-    clearTimeout(sharePushTimer);
+    stopCollabLoops();
     shareId = null;
     updateShareUI();
     history.replaceState(null, '', '/app');
@@ -2055,7 +2118,7 @@ function addImageFromFile(file, wx, wy) {
       const w = nw * k, h = nh * k;
       pushHistory();
       const s = { id: uid++, type: 'image', x: wx - w / 2, y: wy - h / 2, w, h, src: reader.result, strokeWidth: 0, opacity: 1 };
-      state.shapes.push(s);
+      state.shapes.push(tagOwner(s));
       setTool('select');
       state.selectedIds = new Set([s.id]);
       render(); scheduleSave();
@@ -2124,12 +2187,61 @@ document.getElementById('toBack').onclick = () => { reorderSelection('back'); me
 document.getElementById('undoBtn').onclick = undo;
 document.getElementById('redoBtn').onclick = redo;
 
+/* ---------- collaborator identity ---------- */
+const clientId = (() => {
+  let id = sessionStorage.getItem('wb_client');
+  if (!id) { id = 'c' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); sessionStorage.setItem('wb_client', id); }
+  return id;
+})();
+
+const NAME_ADJ = ['Swift', 'Bright', 'Calm', 'Bold', 'Quiet', 'Clever', 'Sunny', 'Cosmic', 'Amber', 'Violet', 'Golden', 'Silver', 'Brisk', 'Merry', 'Nifty'];
+const NAME_ANIMAL = ['Otter', 'Fox', 'Falcon', 'Panda', 'Heron', 'Lynx', 'Sparrow', 'Koala', 'Badger', 'Wren', 'Puffin', 'Marten', 'Ibis', 'Gecko', 'Finch'];
+function randomName() {
+  return NAME_ADJ[Math.floor(Math.random() * NAME_ADJ.length)] + ' ' + NAME_ANIMAL[Math.floor(Math.random() * NAME_ANIMAL.length)];
+}
+let myName = localStorage.getItem('wb_name') || (localStorage.setItem('wb_name', randomName()), localStorage.getItem('wb_name'));
+
+const CURSOR_COLORS = ['#e64980', '#4f6df5', '#12b886', '#f59f00', '#7048e8', '#e8590c', '#1098ad', '#37b24d'];
+function colorForKey(key) {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return CURSOR_COLORS[h % CURSOR_COLORS.length];
+}
+let myColor = colorForKey(myName);
+
+function tagOwner(s) {
+  if (shareId) s.owner = myName;
+  return s;
+}
+
+function updateRenameLabel() {
+  document.getElementById('renameLabel').textContent = 'You appear as: ' + myName;
+}
+updateRenameLabel();
+
+document.getElementById('renameItem').onclick = async () => {
+  menuDropdown.classList.remove('open');
+  const val = await customPrompt('This name is shown to collaborators on shared boards.', { title: 'Your display name', okLabel: 'Save', value: myName });
+  if (val) {
+    myName = val.slice(0, 24);
+    myColor = colorForKey(myName);
+    localStorage.setItem('wb_name', myName);
+    updateRenameLabel();
+    toast('Name updated');
+  }
+};
+
 /* ---------- realtime collaboration (shared boards) ---------- */
 let shareId = null;
 let shareRev = 0;
 let sharePushTimer = null;
 let sharePollTimer = null;
+let presencePollTimer = null;
+let presenceSendTimer = null;
 let sharePushing = false;
+let remotePresences = [];
+const cursorEls = new Map(); // clientId -> DOM node
+let myCursorWorld = null;
 
 function updateShareUI() {
   document.getElementById('shareLabel').textContent = shareId ? 'Copy share link' : 'Share & collaborate';
@@ -2152,6 +2264,49 @@ function applyRemoteDoc(doc) {
   render();
 }
 
+/* small "Name" label that hovers over a shape someone else just created, then fades */
+function showCreatorBadge(s) {
+  const b = shapeBounds(s);
+  const sp = toScreen(b.x, b.y);
+  const el = document.createElement('div');
+  el.className = 'creator-badge';
+  el.textContent = s.owner;
+  el.style.left = sp.x + 'px';
+  el.style.top = sp.y + 'px';
+  el.style.background = colorForKey(s.owner);
+  document.getElementById('cursorLayer').appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 650);
+  }, 2600);
+}
+
+function renderCursors() {
+  const layer = document.getElementById('cursorLayer');
+  const seen = new Set();
+  for (const p of remotePresences) {
+    if (p.clientId === clientId || p.page !== pageIdx) continue;
+    seen.add(p.clientId);
+    let el = cursorEls.get(p.clientId);
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'remote-cursor';
+      el.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 2l16 8-7 2-2 7z"/></svg><span class="cursor-label"></span>';
+      layer.appendChild(el);
+      cursorEls.set(p.clientId, el);
+    }
+    const sp = toScreen(p.x, p.y);
+    el.style.transform = `translate(${sp.x}px, ${sp.y}px)`;
+    el.querySelector('svg').style.fill = p.color;
+    const label = el.querySelector('.cursor-label');
+    label.textContent = p.name;
+    label.style.background = p.color;
+  }
+  for (const [id, el] of cursorEls) {
+    if (!seen.has(id)) { el.remove(); cursorEls.delete(id); }
+  }
+}
+
 function scheduleSharePush() {
   clearTimeout(sharePushTimer);
   sharePushTimer = setTimeout(async () => {
@@ -2167,7 +2322,7 @@ function scheduleSharePush() {
       if (d.rev) shareRev = d.rev;
     } catch {}
     sharePushing = false;
-  }, 600);
+  }, 250);
 }
 
 async function sharePoll() {
@@ -2178,16 +2333,69 @@ async function sharePoll() {
     const d = await r.json();
     // don't yank the board out from under an in-progress gesture or text edit
     if (d.doc && d.rev > shareRev && !action && !editingShape && textEditor.style.display !== 'block') {
+      const prevIds = new Set(state.shapes.map(s => s.id));
       shareRev = d.rev;
       applyRemoteDoc(d.doc);
+      for (const s of state.shapes) {
+        if (!prevIds.has(s.id) && s.owner && s.owner !== myName) showCreatorBadge(s);
+      }
     }
   } catch {}
 }
 
-function startPolling() {
+async function pollPresence() {
+  if (!shareId) return;
+  try {
+    const r = await fetch(`/api/presence?id=${shareId}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    remotePresences = d.presences || [];
+    renderCursors();
+  } catch {}
+}
+
+function sendPresenceTick() {
+  if (!shareId || !myCursorWorld) return;
+  fetch('/api/presence', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ id: shareId, clientId, name: myName, color: myColor, x: myCursorWorld.x, y: myCursorWorld.y, page: pageIdx }),
+  }).catch(() => {});
+}
+
+board.addEventListener('pointermove', e => {
+  if (shareId) myCursorWorld = toWorld(e.clientX, e.clientY);
+});
+
+addEventListener('pagehide', () => {
+  if (shareId) {
+    try {
+      fetch('/api/presence', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: shareId, clientId }), keepalive: true });
+    } catch {}
+  }
+});
+
+function startCollabLoops() {
   clearInterval(sharePollTimer);
-  sharePollTimer = setInterval(sharePoll, 2000);
+  clearInterval(presencePollTimer);
+  clearInterval(presenceSendTimer);
+  sharePollTimer = setInterval(sharePoll, 800);
+  presencePollTimer = setInterval(pollPresence, 400);
+  presenceSendTimer = setInterval(sendPresenceTick, 150);
   updateShareUI();
+}
+
+function stopCollabLoops() {
+  clearInterval(sharePollTimer); sharePollTimer = null;
+  clearInterval(presencePollTimer); presencePollTimer = null;
+  clearInterval(presenceSendTimer); presenceSendTimer = null;
+  clearTimeout(sharePushTimer);
+  if (shareId) {
+    fetch('/api/presence', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: shareId, clientId }) }).catch(() => {});
+  }
+  remotePresences = [];
+  for (const el of cursorEls.values()) el.remove();
+  cursorEls.clear();
 }
 
 async function startSharing() {
@@ -2203,7 +2411,7 @@ async function startSharing() {
     shareRev = d.rev;
     uid += Math.floor(Math.random() * 1e6); // avoid shape-id collisions between collaborators
     history.replaceState(null, '', '/app?share=' + shareId);
-    startPolling();
+    startCollabLoops();
     await navigator.clipboard.writeText(shareLink()).catch(() => {});
     toast('Link copied — anyone with it can draw with you live');
   } catch {
@@ -2222,7 +2430,7 @@ async function collabJoin(id) {
     pageIdx = Math.min(d.doc.pageIdx || 0, d.doc.pages.length - 1);
     applyRemoteDoc(d.doc);
     uid += Math.floor(Math.random() * 1e6);
-    startPolling();
+    startCollabLoops();
     toast('Joined shared board — changes sync live');
     return true;
   } catch {

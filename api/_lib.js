@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { put, head, del } from '@vercel/blob';
+import { put, head, del, list } from '@vercel/blob';
 
 const SECRET = process.env.AUTH_SECRET || '';
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
@@ -78,4 +78,39 @@ export async function writeJSON(pathname, data) {
 
 export async function deleteBlob(pathname) {
   try { await del(pathname, { token: BLOB_TOKEN }); } catch {}
+}
+
+/* ---- presence: one small blob per client, listed by prefix ---- */
+export async function putPresence(id, clientId, data) {
+  await put(`presence/${id}/${clientId}.json`, JSON.stringify(data), {
+    access: 'private',
+    token: BLOB_TOKEN,
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: 'application/json',
+    cacheControlMaxAge: 0,
+  });
+}
+
+export async function listPresences(id) {
+  const { blobs } = await list({ prefix: `presence/${id}/`, token: BLOB_TOKEN });
+  const results = await Promise.all(blobs.map(async b => {
+    try {
+      const base = b.downloadUrl || b.url;
+      const url = base + (base.includes('?') ? '&' : '?') + 'cb=' + Date.now();
+      const r = await fetch(url, {
+        headers: { authorization: `Bearer ${BLOB_TOKEN}`, 'cache-control': 'no-cache' },
+        cache: 'no-store',
+      });
+      if (!r.ok) return null;
+      return await r.json();
+    } catch {
+      return null;
+    }
+  }));
+  return results.filter(Boolean);
+}
+
+export async function deletePresence(id, clientId) {
+  try { await del(`presence/${id}/${clientId}.json`, { token: BLOB_TOKEN }); } catch {}
 }
