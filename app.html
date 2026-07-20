@@ -2556,7 +2556,7 @@ function scheduleSharePush() {
       if (d.rev) shareRev = d.rev;
     } catch {}
     sharePushing = false;
-  }, 250);
+  }, 500);
 }
 
 async function sharePoll() {
@@ -2588,8 +2588,12 @@ async function pollPresence() {
   } catch {}
 }
 
+let lastSentCursor = null;
 function sendPresenceTick() {
   if (!shareId || !myCursorWorld) return;
+  // skip the write entirely if the cursor hasn't actually moved — idle tabs shouldn't burn blob quota
+  if (lastSentCursor && Math.hypot(myCursorWorld.x - lastSentCursor.x, myCursorWorld.y - lastSentCursor.y) < 2 / state.zoom) return;
+  lastSentCursor = { x: myCursorWorld.x, y: myCursorWorld.y };
   fetch('/api/presence', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -2613,11 +2617,25 @@ function startCollabLoops() {
   clearInterval(sharePollTimer);
   clearInterval(presencePollTimer);
   clearInterval(presenceSendTimer);
-  sharePollTimer = setInterval(sharePoll, 800);
-  presencePollTimer = setInterval(pollPresence, 180);
-  presenceSendTimer = setInterval(sendPresenceTick, 120);
+  // background tabs keep no benefit from polling — this alone was most of the wasted quota
+  if (document.hidden) { updateShareUI(); return; }
+  sharePollTimer = setInterval(sharePoll, 1200);
+  presencePollTimer = setInterval(pollPresence, 700);
+  presenceSendTimer = setInterval(sendPresenceTick, 400);
   updateShareUI();
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (!shareId) return;
+  if (document.hidden) {
+    clearInterval(sharePollTimer); sharePollTimer = null;
+    clearInterval(presencePollTimer); presencePollTimer = null;
+    clearInterval(presenceSendTimer); presenceSendTimer = null;
+  } else {
+    startCollabLoops();
+    sharePoll(); // catch up immediately instead of waiting for the next tick
+  }
+});
 
 function stopCollabLoops() {
   clearInterval(sharePollTimer); sharePollTimer = null;
