@@ -173,6 +173,12 @@
   }
   .menu-item:hover { background: #f0f0f3; }
   .menu-item .shortcut { margin-left: auto; font-size: 11px; color: var(--muted); }
+  .menu-item .shortcut + .shortcut { margin-left: 6px; }
+  .menu-item svg {
+    width: 15px; height: 15px; flex: 0 0 auto;
+    fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
   .menu-sep { height: 1px; background: var(--border); margin: 5px 4px; }
   .menu-item.danger { color: #d33; }
 
@@ -207,28 +213,28 @@
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
   </button>
   <div class="menu-dropdown" id="menuDropdown">
-    <button class="menu-item" id="exportPng">🖼️ Export as PNG</button>
-    <button class="menu-item" id="exportSvg">📐 Export as SVG</button>
-    <button class="menu-item" id="exportPdf">🧾 Export all pages as PDF</button>
-    <button class="menu-item" id="exportJson">💾 Save file (.json)</button>
-    <button class="menu-item" id="importJson">📂 Open file…</button>
-    <button class="menu-item" id="insertImage">🖼️ Insert image…</button>
+    <button class="menu-item" id="exportPng"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15.5l-5-5L5.5 21"/></svg>Export as PNG</button>
+    <button class="menu-item" id="exportSvg"><svg viewBox="0 0 24 24"><path d="M4 18C7.5 6 16.5 6 20 18"/><circle cx="4" cy="18" r="1.8"/><circle cx="20" cy="18" r="1.8"/></svg>Export as SVG</button>
+    <button class="menu-item" id="exportPdf"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>Export all pages as PDF</button>
+    <button class="menu-item" id="exportJson"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Save file (.json)</button>
+    <button class="menu-item" id="importJson"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>Open file…</button>
+    <button class="menu-item" id="insertImage"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="14" rx="2"/><circle cx="7.5" cy="10.5" r="1.3"/><path d="M17 15.5l-4-4-8 8.5"/><line x1="19" y1="2" x2="19" y2="8"/><line x1="16" y1="5" x2="22" y2="5"/></svg>Insert image…</button>
     <div class="menu-sep"></div>
-    <button class="menu-item" id="lockSel">🔒 Lock selection <span style="float:right;opacity:.5">⌘L</span></button>
-    <button class="menu-item" id="lockRef">📌 Lock as reference</button>
-    <button class="menu-item" id="unlockAll">🔓 Unlock all <span style="float:right;opacity:.5">⌘⇧L</span></button>
+    <button class="menu-item" id="lockSel"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Lock selection <span class="shortcut">⌘L</span></button>
+    <button class="menu-item" id="lockRef"><svg viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 3h6l-1 7 3 3H7l3-3-1-7z"/></svg>Lock as reference</button>
+    <button class="menu-item" id="unlockAll"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.7"/></svg>Unlock all <span class="shortcut">⌘⇧L</span></button>
     <div class="menu-sep"></div>
-    <button class="menu-item" id="darkToggle">🌙 Dark mode <span id="darkCheck" style="float:right;color:var(--accent)"></span></button>
+    <button class="menu-item" id="darkToggle"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>Dark mode <span id="darkCheck" class="shortcut" style="color:var(--accent)"></span></button>
     <div class="menu-sep"></div>
-    <button class="menu-item" id="copyPng">📋 Copy as image</button>
+    <button class="menu-item" id="copyPng"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy as image</button>
     <div class="menu-sep"></div>
-    <button class="menu-item" id="toFront">⬆️ Bring to front <span style="float:right;opacity:.5">]</span></button>
-    <button class="menu-item" id="toBack">⬇️ Send to back <span style="float:right;opacity:.5">[</span></button>
+    <button class="menu-item" id="toFront"><svg viewBox="0 0 24 24"><line x1="5" y1="4" x2="19" y2="4"/><polyline points="8 12 12 8 16 12"/><line x1="12" y1="8" x2="12" y2="20"/></svg>Bring to front <span class="shortcut">]</span></button>
+    <button class="menu-item" id="toBack"><svg viewBox="0 0 24 24"><line x1="5" y1="20" x2="19" y2="20"/><polyline points="8 12 12 16 16 12"/><line x1="12" y1="4" x2="12" y2="16"/></svg>Send to back <span class="shortcut">[</span></button>
     <div class="menu-sep"></div>
-    <button class="menu-item" id="snapToggle">📏 Snap to grid <span id="snapCheck" style="float:right;color:var(--accent)"></span><span style="float:right;opacity:.5;margin-right:8px">G</span></button>
-    <button class="menu-item" id="presenterToggle">🔴 Presenter mode <span style="float:right;opacity:.5">Esc exits</span></button>
+    <button class="menu-item" id="snapToggle"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Snap to grid <span id="snapCheck" class="shortcut" style="color:var(--accent)"></span><span class="shortcut" style="margin-left:6px">G</span></button>
+    <button class="menu-item" id="presenterToggle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>Presenter mode <span class="shortcut">Esc exits</span></button>
     <div class="menu-sep"></div>
-    <button class="menu-item danger" id="clearBoard">🗑️ Clear board</button>
+    <button class="menu-item danger" id="clearBoard"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Clear board</button>
   </div>
   <input type="file" id="fileInput" accept=".json,application/json" style="display:none">
   <input type="file" id="imgInput" accept="image/*,.svg" multiple style="display:none">
@@ -322,7 +328,7 @@
   <span id="pageLabel" title="Page">1 / 1</span>
   <button id="pageNext" title="Next page (PgDn)">›</button>
   <button id="pageAdd" title="Add page">+</button>
-  <button id="pageDel" title="Delete page">🗑</button>
+  <button id="pageDel" title="Delete page"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
 </div>
 
 <!-- Undo/redo -->
