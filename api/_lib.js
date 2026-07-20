@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { put, head, del, list } from '@vercel/blob';
+import { put, head, del } from '@vercel/blob';
 
 const SECRET = process.env.AUTH_SECRET || '';
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
@@ -80,7 +80,15 @@ export async function deleteBlob(pathname) {
   try { await del(pathname, { token: BLOB_TOKEN }); } catch {}
 }
 
-/* ---- presence: one small blob per client, listed by prefix ---- */
+/* ---- presence ----
+   list() on Vercel Blob is only eventually consistent — a brand-new client's
+   blob can take several seconds to appear in a prefix listing. So instead of
+   listing, we keep a small "roster" file (a plain exact-key read, which IS
+   consistent) naming which clientIds might be active, and fetch each of
+   those by exact key. */
+const ROSTER_TTL = 30000;    // drop a roster entry if not renewed within this long
+const ROSTER_WRITE_MIN = 3000; // only rewrite the roster this often per client
+
 export async function putPresence(id, clientId, data) {
   await put(`presence/${id}/${clientId}.json`, JSON.stringify(data), {
     access: 'private',
@@ -90,27 +98,35 @@ export async function putPresence(id, clientId, data) {
     contentType: 'application/json',
     cacheControlMaxAge: 0,
   });
+
+  const rosterPath = `presence/${id}/_roster.json`;
+  const roster = (await readJSON(rosterPath)) || {};
+  const now = Date.now();
+  const lastWritten = roster[clientId];
+  if (lastWritten == null || now - lastWritten > ROSTER_WRITE_MIN) {
+    roster[clientId] = now;
+    for (const cid of Object.keys(roster)) {
+      if (now - roster[cid] > ROSTER_TTL) delete roster[cid];
+    }
+    await writeJSON(rosterPath, roster);
+  }
 }
 
 export async function listPresences(id) {
-  const { blobs } = await list({ prefix: `presence/${id}/`, token: BLOB_TOKEN });
-  const results = await Promise.all(blobs.map(async b => {
-    try {
-      const base = b.downloadUrl || b.url;
-      const url = base + (base.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-      const r = await fetch(url, {
-        headers: { authorization: `Bearer ${BLOB_TOKEN}`, 'cache-control': 'no-cache' },
-        cache: 'no-store',
-      });
-      if (!r.ok) return null;
-      return await r.json();
-    } catch {
-      return null;
-    }
-  }));
+  const roster = (await readJSON(`presence/${id}/_roster.json`)) || {};
+  const clientIds = Object.keys(roster);
+  const results = await Promise.all(clientIds.map(cid => readJSON(`presence/${id}/${cid}.json`)));
   return results.filter(Boolean);
 }
 
 export async function deletePresence(id, clientId) {
   try { await del(`presence/${id}/${clientId}.json`, { token: BLOB_TOKEN }); } catch {}
+  try {
+    const rosterPath = `presence/${id}/_roster.json`;
+    const roster = await readJSON(rosterPath);
+    if (roster && clientId in roster) {
+      delete roster[clientId];
+      await writeJSON(rosterPath, roster);
+    }
+  } catch {}
 }
