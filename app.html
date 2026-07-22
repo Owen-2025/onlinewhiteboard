@@ -226,6 +226,27 @@
 
   /* ---------- Menu ---------- */
   .menu-wrap { position: fixed; top: 14px; left: 14px; z-index: 25; }
+
+  /* ---------- Active users ---------- */
+  .active-users {
+    position: fixed; top: 14px; right: 14px; z-index: 25;
+    display: none; align-items: center; gap: 6px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 99px; box-shadow: var(--shadow); padding: 6px 10px 6px 6px;
+  }
+  .active-users.show { display: flex; }
+  .active-users .avatars { display: flex; }
+  .active-users .avatar {
+    width: 28px; height: 28px; border-radius: 50%; margin-left: -8px;
+    border: 2px solid var(--panel); display: grid; place-items: center;
+    font-size: 12px; font-weight: 700; color: #fff; cursor: default;
+    box-shadow: 0 1px 2px rgba(0,0,0,.15);
+  }
+  .active-users .avatar:first-child { margin-left: 0; }
+  .active-users .avatar.you { border-style: dashed; }
+  .active-users .count {
+    font-size: 12px; color: var(--muted); font-weight: 600; padding-left: 2px;
+  }
   .menu-btn {
     width: 44px; height: 44px; background: var(--panel); border: 1px solid var(--border);
     border-radius: var(--radius); box-shadow: var(--shadow); cursor: pointer;
@@ -279,6 +300,9 @@
 <body>
 
 <div id="board"><canvas id="canvas"></canvas></div>
+
+<!-- Active users -->
+<div id="activeUsers" class="active-users"></div>
 
 <!-- Menu -->
 <div class="menu-wrap">
@@ -2479,6 +2503,7 @@ const PERSONAL_BOARD_KEY = 'wb_personal_board';
 function updateShareUI() {
   document.getElementById('shareLabel').textContent = liveCollab ? 'Copy share link' : 'Share & collaborate';
   document.getElementById('shareStatus').textContent = liveCollab ? 'live ●' : '';
+  renderActiveUsers();
 }
 
 function leaveCurrentShare() {
@@ -2548,6 +2573,23 @@ function renderCursors() {
   for (const [id, el] of cursorEls) {
     if (!seen.has(id)) { el.remove(); cursorEls.delete(id); }
   }
+  renderActiveUsers();
+}
+
+function renderActiveUsers() {
+  const el = document.getElementById('activeUsers');
+  if (!liveCollab) { el.classList.remove('show'); return; }
+  el.classList.add('show');
+  const others = remotePresences.filter(p => p.clientId !== clientId);
+  const all = [{ name: myName, color: myColor, you: true }, ...others.map(p => ({ name: p.name, color: p.color, you: false }))];
+  const MAX = 5;
+  const shown = all.slice(0, MAX);
+  const overflow = all.length - shown.length;
+  const avatars = shown.map(u =>
+    `<div class="avatar${u.you ? ' you' : ''}" title="${esc(u.name)}${u.you ? ' (you)' : ''}" style="background:${u.color}">${esc(u.name.charAt(0).toUpperCase())}</div>`
+  ).join('');
+  const count = overflow > 0 ? `+${overflow}` : (all.length === 1 ? 'Just you' : `${all.length} online`);
+  el.innerHTML = `<div class="avatars">${avatars}</div><span class="count">${count}</span>`;
 }
 
 function scheduleSharePush() {
