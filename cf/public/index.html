@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Whiteboard — draw, plan, present</title>
+<meta name="description" content="A fast, free online whiteboard. Sketch, diagram and present — export to PNG, SVG and PDF. Sign up to save your boards to the cloud.">
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --panel: #ffffff;
+    --border: #e2e2e6;
+    --text: #1c1c21;
+    --muted: #8a8a93;
+    --accent: #4f6df5;
+    --accent-soft: #e8ecfe;
+    --shadow: 0 4px 16px rgba(0,0,0,.08);
+    --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(1200px 500px at 70% -10%, var(--accent-soft), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+  .logo svg { width: 26px; height: 26px; stroke: var(--accent); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  nav { display: flex; gap: 10px; align-items: center; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 9px 18px; border-radius: 9px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--text); font-size: 14px; font-weight: 500;
+    cursor: pointer; text-decoration: none; transition: filter .12s, transform .12s;
+  }
+  .btn:hover { filter: brightness(.97); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.big { padding: 13px 26px; font-size: 16px; border-radius: 11px; }
+
+  .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; padding: 56px 0 40px; }
+  .hero h1 { font-size: 44px; line-height: 1.12; letter-spacing: -.02em; margin-bottom: 18px; }
+  .hero h1 em { color: var(--accent); font-style: normal; }
+  .hero p.sub { font-size: 17px; color: var(--muted); line-height: 1.6; margin-bottom: 26px; max-width: 46ch; }
+  .hero .cta { display: flex; gap: 12px; align-items: center; }
+  .hero .note { margin-top: 14px; font-size: 12.5px; color: var(--muted); }
+
+  /* auth card */
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 26px; max-width: 380px; width: 100%; justify-self: end;
+  }
+  .tabs { display: flex; gap: 4px; background: var(--bg); border-radius: 9px; padding: 4px; margin-bottom: 18px; }
+  .tabs button {
+    flex: 1; padding: 8px 0; border: none; border-radius: 7px; background: transparent;
+    font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer;
+  }
+  .tabs button.active { background: var(--panel); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .card label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin: 12px 0 5px; }
+  .card input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; background: var(--bg); color: var(--text); outline: none;
+  }
+  .card input:focus { border-color: var(--accent); background: var(--panel); }
+  .card .btn { width: 100%; margin-top: 18px; }
+  .msg { font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+  .msg.err { color: #d33; }
+  .msg.ok { color: #2c9c46; }
+  .signed-in { text-align: center; }
+  .signed-in .who { font-size: 14px; color: var(--muted); margin: 10px 0 16px; word-break: break-all; }
+
+  /* features */
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 30px 0 70px; }
+  .feat {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+  }
+  .feat svg { width: 22px; height: 22px; stroke: var(--accent); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 10px; }
+  .feat h3 { font-size: 15px; margin-bottom: 6px; }
+  .feat p { font-size: 13px; color: var(--muted); line-height: 1.55; }
+
+  footer { padding: 26px 0 34px; font-size: 12.5px; color: var(--muted); display: flex; justify-content: space-between; }
+  footer a { color: var(--muted); }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; padding-top: 30px; }
+    .card { justify-self: stretch; max-width: none; }
+    .hero h1 { font-size: 34px; }
+    .features { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M7 12l3-4 3 3 4-5"/><path d="M8 21h8M12 17v4"/></svg>
+      Online Whiteboard
+    </div>
+    <nav>
+      <a class="btn" href="/app" id="navOpen">Open Whiteboard</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div>
+      <h1>Think it. <em>Sketch it.</em><br>Share it.</h1>
+      <p class="sub">A fast, free whiteboard that runs entirely in your browser. Draw, diagram, add sticky notes and images, present with a laser pointer — then export to PNG, SVG or PDF.</p>
+      <div class="cta">
+        <a class="btn primary big" href="/app">Start drawing — it's free</a>
+      </div>
+      <p class="note">No account needed to draw. Sign up to save your boards to the cloud and pick up on any device.</p>
+    </div>
+
+    <div class="card" id="authCard">
+      <div id="authForms">
+        <div class="tabs">
+          <button id="tabSignup" class="active">Sign up</button>
+          <button id="tabLogin">Log in</button>
+        </div>
+        <form id="authForm">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required placeholder="you@example.com">
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
+          <button class="btn primary" type="submit" id="authSubmit">Create account</button>
+          <div class="msg" id="authMsg"></div>
+        </form>
+      </div>
+      <div class="signed-in" id="signedIn" style="display:none">
+        <div style="font-size:15px;font-weight:600">You're signed in</div>
+        <div class="who" id="whoEmail"></div>
+        <a class="btn primary" href="/app" style="width:100%">Open your whiteboard</a>
+        <button class="btn" id="logoutBtn" style="width:100%;margin-top:8px">Sign out</button>
+        <div class="msg" id="signedMsg"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feat">
+      <svg viewBox="0 0 24 24"><path d="M17 3l4 4L8 20l-5 1 1-5L17 3z"/></svg>
+      <h3>Every tool you need</h3>
+      <p>Pen, shapes, arrows, text, sticky notes and images — with move, resize, rotate, lock and multi-page boards.</p>
+    </div>
+    <div class="feat">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <h3>Export anywhere</h3>
+      <p>One click to PNG, SVG or a multi-page PDF. Save and load board files, or copy straight to your clipboard.</p>
+    </div>
+    <div class="feat">
+      <svg viewBox="0 0 24 24"><path d="M17.5 19a4.5 4.5 0 1 0-.4-9A6 6 0 0 0 5.3 12 3.5 3.5 0 0 0 6 19h11.5z"/></svg>
+      <h3>Saved to the cloud</h3>
+      <p>Sign up and your boards sync automatically as you draw — open them from any device, any time.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>Online Whiteboard</span>
+    <a href="https://github.com/Owen-2025/onlinewhiteboard">GitHub</a>
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let mode = 'signup';
+
+function setMode(m) {
+  mode = m;
+  $('tabSignup').classList.toggle('active', m === 'signup');
+  $('tabLogin').classList.toggle('active', m === 'login');
+  $('authSubmit').textContent = m === 'signup' ? 'Create account' : 'Log in';
+  $('password').autocomplete = m === 'signup' ? 'new-password' : 'current-password';
+  $('authMsg').textContent = '';
+}
+$('tabSignup').onclick = () => setMode('signup');
+$('tabLogin').onclick = () => setMode('login');
+
+function showSignedIn(email) {
+  $('authForms').style.display = 'none';
+  $('signedIn').style.display = 'block';
+  $('whoEmail').textContent = email;
+  $('navOpen').textContent = 'Open your whiteboard';
+}
+
+$('authForm').onsubmit = async e => {
+  e.preventDefault();
+  const msg = $('authMsg');
+  msg.className = 'msg';
+  msg.textContent = '…';
+  try {
+    const r = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: mode, email: $('email').value, password: $('password').value }),
+    });
+    const data = await r.json();
+    if (!r.ok) { msg.className = 'msg err'; msg.textContent = data.error || 'Something went wrong'; return; }
+    msg.className = 'msg ok';
+    msg.textContent = 'Success — opening your whiteboard…';
+    setTimeout(() => location.href = '/app', 500);
+  } catch {
+    msg.className = 'msg err';
+    msg.textContent = 'Network error — please try again';
+  }
+};
+
+$('logoutBtn').onclick = async () => {
+  await fetch('/api/auth', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
+  location.reload();
+};
+
+fetch('/api/auth').then(r => r.json()).then(d => {
+  if (d.user) showSignedIn(d.user.email);
+}).catch(() => {});
+
+if (location.search.includes('login=1')) setMode('login');
+</script>
+</body>
+</html>

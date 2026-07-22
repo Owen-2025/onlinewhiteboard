@@ -1,0 +1,12 @@
+name = "onlinewhiteboard"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "404-page"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "106b0724d30c48a8a88e1c2d7cbd98b5"
