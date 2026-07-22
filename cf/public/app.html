@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Whiteboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f7f7f8;
@@ -108,6 +111,7 @@
     border-radius: 7px; cursor: pointer; display: grid; place-items: center;
   }
   .size-btn.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .font-btn { color: var(--text); font-size: 14px; }
   .size-btn i { display: block; border-radius: 99px; background: var(--text); }
   .opacity-slider { width: 100%; accent-color: var(--accent); }
 
@@ -430,6 +434,15 @@
     <h4>Opacity</h4>
     <input type="range" class="opacity-slider" id="opacitySlider" min="10" max="100" value="100">
   </div>
+  <div>
+    <h4>Font</h4>
+    <div class="size-row" id="fontRow">
+      <button class="size-btn font-btn" data-font="sans" style="font-family:-apple-system,sans-serif" title="Sans">Aa</button>
+      <button class="size-btn font-btn" data-font="serif" style="font-family:Georgia,serif" title="Serif">Aa</button>
+      <button class="size-btn font-btn" data-font="mono" style="font-family:Consolas,monospace" title="Mono">Aa</button>
+      <button class="size-btn font-btn" data-font="hand" style="font-family:'Caveat',cursive;font-size:17px" title="Handwritten">Aa</button>
+    </div>
+  </div>
 </div>
 
 <!-- Zoom -->
@@ -576,12 +589,21 @@ const DPR = window.devicePixelRatio || 1;
 const STROKE_COLORS = ['#1c1c21','#e03131','#f08c00','#2f9e44','#1971c2','#9c36b5','#ffffff','#846358','#f783ac','#15aabf','#fab005','#868e96'];
 const FILL_COLORS = ['transparent','#ffc9c9','#ffec99','#b2f2bb','#a5d8ff','#eebefa','#ffffff','#d9b8a9','#fcc2d7','#99e9f2','#ffe066','#dee2e6'];
 
+const FONT_STACKS = {
+  sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  serif: 'Georgia, "Times New Roman", serif',
+  mono: '"SF Mono", Consolas, "Courier New", monospace',
+  hand: '"Caveat", "Kalam", cursive',
+};
+function fontCss(s) { return FONT_STACKS[s.fontFamily] || FONT_STACKS.sans; }
+
 const state = {
   tool: 'pen',
   strokeColor: '#1c1c21',
   fillColor: 'transparent',
   strokeWidth: 4,
   opacity: 1,
+  fontFamily: 'sans',
   panX: 0, panY: 0, zoom: 1,
   snap: false,
   shapes: [],
@@ -1032,7 +1054,7 @@ function drawShape(c, s) {
     }
   } else if (s.type === 'text') {
     c.fillStyle = s.stroke;
-    c.font = `${s.fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+    c.font = `${s.fontSize}px ${fontCss(s)}`;
     c.textBaseline = 'top';
     const lines = s.text.split('\n');
     lines.forEach((line, i) => c.fillText(line, s.x, s.y + i * s.fontSize * 1.25));
@@ -1047,10 +1069,10 @@ function drawShape(c, s) {
     c.fill();
     c.restore();
     c.fillStyle = '#33322d';
-    c.font = `${s.fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+    c.font = `${s.fontSize}px ${fontCss(s)}`;
     c.textBaseline = 'top';
     const pad = 12;
-    const lines = wrapLines(c, s.text, s.fontSize, s.w - pad * 2);
+    const lines = wrapLines(c, s.text, s.fontSize, s.w - pad * 2, fontCss(s));
     lines.forEach((line, i) => c.fillText(line, s.x + pad, s.y + pad + i * s.fontSize * 1.3));
   } else if (s.type === 'image') {
     const img = getImg(s);
@@ -1075,7 +1097,7 @@ function drawShape(c, s) {
     if (s.strokeWidth) c.stroke();
     c.restore();
     c.fillStyle = s.textColor || '#20232b';
-    c.font = `${s.root ? '700 ' : '600 '}${s.fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+    c.font = `${s.root ? '700 ' : '600 '}${s.fontSize}px ${fontCss(s)}`;
     c.textBaseline = 'middle';
     c.textAlign = 'center';
     const lines = s.text.split('\n');
@@ -1086,8 +1108,8 @@ function drawShape(c, s) {
   if (rotated) c.restore();
 }
 
-function wrapLines(c, text, fontSize, maxWidth) {
-  c.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+function wrapLines(c, text, fontSize, maxWidth, family = FONT_STACKS.sans) {
+  c.font = `${fontSize}px ${family}`;
   const out = [];
   for (const raw of text.split('\n')) {
     if (!raw) { out.push(''); continue; }
@@ -1267,6 +1289,7 @@ function startTextEdit(wx, wy, existing) {
   textEditor.style.top = sp.y + 'px';
   textEditor.style.fontSize = (fontSize * state.zoom) + 'px';
   textEditor.style.color = color;
+  textEditor.style.fontFamily = fontCss(existing || state);
   textEditor.style.transform = isMind ? 'translate(-50%, -50%)' : 'none';
   textEditor.style.textAlign = isMind ? 'center' : 'left';
   textEditor.style.fontWeight = isMind ? (existing.root ? '700' : '600') : '400';
@@ -1338,7 +1361,7 @@ function commitTextEdit() {
     editingShape = null;
   } else if (text.trim()) {
     pushHistory();
-    const s = { id: uid++, type: 'text', x: wx, y: wy, text, fontSize, stroke: state.strokeColor, strokeWidth: 0, opacity: state.opacity, w: 0, h: 0 };
+    const s = { id: uid++, type: 'text', x: wx, y: wy, text, fontSize, fontFamily: state.fontFamily, stroke: state.strokeColor, strokeWidth: 0, opacity: state.opacity, w: 0, h: 0 };
     measureText(s);
     state.shapes.push(tagOwner(s));
   }
@@ -1348,7 +1371,7 @@ function commitTextEdit() {
 function measureText(s) {
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.font = `${s.fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  ctx.font = `${s.fontSize}px ${fontCss(s)}`;
   const lines = s.text.split('\n');
   s.w = Math.max(...lines.map(l => ctx.measureText(l).width));
   s.h = lines.length * s.fontSize * 1.25;
@@ -1365,7 +1388,7 @@ const MIND_PALETTE = [
 function measureMindNode(s) {
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.font = `${s.root ? 700 : 600} ${s.fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  ctx.font = `${s.root ? 700 : 600} ${s.fontSize}px ${fontCss(s)}`;
   const lines = (s.text || ' ').split('\n');
   const textW = Math.max(...lines.map(l => ctx.measureText(l || ' ').width));
   s.w = Math.max(90, textW + 44);
@@ -1385,7 +1408,7 @@ function createMindNode(cx, cy, parentId) {
   const isRoot = !parentId;
   const palette = isRoot ? { fill: '#eef2ff', stroke: '#4f6df5' } : MIND_PALETTE[Math.floor(Math.random() * MIND_PALETTE.length)];
   const s = {
-    id: uid++, type: 'mindnode', text: '', fontSize: isRoot ? 16 : 14,
+    id: uid++, type: 'mindnode', text: '', fontSize: isRoot ? 16 : 14, fontFamily: state.fontFamily,
     fill: palette.fill, stroke: palette.stroke, strokeWidth: 0, textColor: '#20232b',
     opacity: 1, root: isRoot, parentId: parentId || undefined, w: 140, h: 44,
   };
@@ -1563,7 +1586,7 @@ board.addEventListener('pointerdown', e => {
     pushHistory();
     const fill = (state.fillColor && state.fillColor !== 'transparent') ? state.fillColor : '#ffec99';
     const sp = snapPt({ x: wp.x - 90, y: wp.y - 90 });
-    const s = { id: uid++, type: 'sticky', x: sp.x, y: sp.y, w: 180, h: 180, fill, fontSize: 18, text: '', stroke: '#33322d', strokeWidth: 0, opacity: state.opacity };
+    const s = { id: uid++, type: 'sticky', x: sp.x, y: sp.y, w: 180, h: 180, fill, fontSize: 18, fontFamily: state.fontFamily, text: '', stroke: '#33322d', strokeWidth: 0, opacity: state.opacity };
     state.shapes.push(tagOwner(s));
     render(); scheduleSave();
     action = null;
@@ -1896,11 +1919,20 @@ function buildSwatches(containerId, colors, get, set) {
 buildSwatches('strokeSwatches', STROKE_COLORS, () => state.strokeColor, c => state.strokeColor = c);
 buildSwatches('fillSwatches', FILL_COLORS, () => state.fillColor, c => state.fillColor = c);
 
-document.querySelectorAll('.size-btn').forEach(b => {
+document.querySelectorAll('#sizeRow .size-btn').forEach(b => {
   if (+b.dataset.size === state.strokeWidth) b.classList.add('selected');
   b.onclick = () => {
     state.strokeWidth = +b.dataset.size;
-    document.querySelectorAll('.size-btn').forEach(x => x.classList.toggle('selected', x === b));
+    document.querySelectorAll('#sizeRow .size-btn').forEach(x => x.classList.toggle('selected', x === b));
+    applyStyleToSelection();
+  };
+});
+
+document.querySelectorAll('#fontRow .font-btn').forEach(b => {
+  if (b.dataset.font === state.fontFamily) b.classList.add('selected');
+  b.onclick = () => {
+    state.fontFamily = b.dataset.font;
+    document.querySelectorAll('#fontRow .font-btn').forEach(x => x.classList.toggle('selected', x === b));
     applyStyleToSelection();
   };
 });
@@ -1918,6 +1950,15 @@ function applyStyleToSelection() {
     s.stroke = state.strokeColor;
     s.opacity = state.opacity;
     if (s.type !== 'text') { s.strokeWidth = state.strokeWidth; s.fill = state.fillColor; }
+    if (s.type === 'text' || s.type === 'sticky' || s.type === 'mindnode') {
+      s.fontFamily = state.fontFamily;
+      if (s.type === 'text') measureText(s);
+      else if (s.type === 'mindnode') {
+        const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+        measureMindNode(s);
+        s.x = cx - s.w / 2; s.y = cy - s.h / 2;
+      }
+    }
   }
   render(); scheduleSave();
 }
@@ -2278,14 +2319,14 @@ function shapeToSVGInner(s) {
     const lines = s.text.split('\n');
     const spans = lines.map((l, i) =>
       `<tspan x="${s.x}" y="${s.y + i * s.fontSize * 1.25 + s.fontSize * 0.9}">${esc(l)}</tspan>`).join('');
-    return `<text font-family="-apple-system, 'Segoe UI', sans-serif" font-size="${s.fontSize}" fill="${s.stroke}" opacity="${s.opacity ?? 1}">${spans}</text>`;
+    return `<text font-family="${fontCss(s)}" font-size="${s.fontSize}" fill="${s.stroke}" opacity="${s.opacity ?? 1}">${spans}</text>`;
   }
   if (s.type === 'sticky') {
     const pad = 12;
-    const lines = wrapLines(ctx, s.text, s.fontSize, s.w - pad * 2);
+    const lines = wrapLines(ctx, s.text, s.fontSize, s.w - pad * 2, fontCss(s));
     const spans = lines.map((l, i) =>
       `<tspan x="${s.x + pad}" y="${s.y + pad + i * s.fontSize * 1.3 + s.fontSize * 0.9}">${esc(l)}</tspan>`).join('');
-    return `<g opacity="${s.opacity ?? 1}"><rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="6" fill="${s.fill}"/><text font-family="-apple-system, 'Segoe UI', sans-serif" font-size="${s.fontSize}" fill="#33322d">${spans}</text></g>`;
+    return `<g opacity="${s.opacity ?? 1}"><rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="6" fill="${s.fill}"/><text font-family="${fontCss(s)}" font-size="${s.fontSize}" fill="#33322d">${spans}</text></g>`;
   }
   if (s.type === 'image') {
     return `<image x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" href="${s.src}" opacity="${s.opacity ?? 1}"/>`;
@@ -2295,7 +2336,7 @@ function shapeToSVGInner(s) {
     const weight = s.root ? 700 : 600;
     const spans = lines.map((l, i) =>
       `<tspan x="${s.x + s.w / 2}" y="${s.y + s.h / 2 + (i - (lines.length - 1) / 2) * s.fontSize * 1.25 + s.fontSize * 0.32}">${esc(l)}</tspan>`).join('');
-    return `<g opacity="${s.opacity ?? 1}"><rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${s.h / 2}" fill="${s.fill}" stroke="${s.stroke}" stroke-width="${s.strokeWidth || 0}"/><text font-family="-apple-system, 'Segoe UI', sans-serif" font-size="${s.fontSize}" font-weight="${weight}" text-anchor="middle" fill="${s.textColor || '#20232b'}">${spans}</text></g>`;
+    return `<g opacity="${s.opacity ?? 1}"><rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${s.h / 2}" fill="${s.fill}" stroke="${s.stroke}" stroke-width="${s.strokeWidth || 0}"/><text font-family="${fontCss(s)}" font-size="${s.fontSize}" font-weight="${weight}" text-anchor="middle" fill="${s.textColor || '#20232b'}">${spans}</text></g>`;
   }
   return '';
 }
