@@ -151,12 +151,18 @@
 
   /* ---------- realtime collaboration: cursors & creation badges ---------- */
   #cursorLayer { position: fixed; inset: 0; z-index: 15; overflow: hidden; pointer-events: none; }
-  .remote-cursor { position: absolute; top: 0; left: 0; will-change: transform; transition: transform 60ms linear; }
+  /* glide duration matches the presence poll cadence below, so motion looks continuous
+     instead of a snap-then-freeze every time a new position arrives */
+  .remote-cursor { position: absolute; top: 0; left: 0; will-change: transform; transition: transform 380ms linear; }
   .remote-cursor svg { display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
   .cursor-label {
     position: absolute; left: 15px; top: 13px; white-space: nowrap; font-size: 11px; font-weight: 600;
     color: #fff; padding: 2px 7px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,.25);
   }
+  .shortcuts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; font-size: 13px; }
+  .shortcuts-grid b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }
+  .shortcuts-grid div div { color: var(--text); line-height: 1.7; }
+
   #boardsList { max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; text-align: left; }
   #boardsList .empty { color: var(--muted); font-size: 13px; padding: 10px 2px; }
   .board-row {
@@ -314,6 +320,7 @@
     <div class="menu-sep"></div>
     <button class="menu-item" id="accountItem"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span id="accountLabel">Sign in / Sign up</span><span class="shortcut" id="syncStatus"></span></button>
     <button class="menu-item" id="myBoardsItem"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg>My boards</button>
+    <button class="menu-item" id="recentBoardsItem"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>Recent boards</button>
     <button class="menu-item" id="signOutItem" style="display:none"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>
     <div class="menu-sep"></div>
     <button class="menu-item" id="exportPng"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15.5l-5-5L5.5 21"/></svg>Export as PNG</button>
@@ -339,6 +346,7 @@
     <div class="menu-sep"></div>
     <button class="menu-item" id="snapToggle"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Snap to grid <span id="snapCheck" class="shortcut" style="color:var(--accent)"></span><span class="shortcut" style="margin-left:6px">G</span></button>
     <button class="menu-item" id="presenterToggle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>Presenter mode <span class="shortcut">Esc exits</span></button>
+    <button class="menu-item" id="shortcutsItem"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M9 9h.01M12 9h.01M15 9h.01M18 9h.01M6 12h.01M9 12h.01M12 12h.01M15 12h.01M18 12h.01M8 15h8"/></svg>Keyboard shortcuts <span class="shortcut">?</span></button>
     <div class="menu-sep"></div>
     <button class="menu-item danger" id="clearBoard"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Clear board</button>
   </div>
@@ -475,6 +483,49 @@
 </div>
 
 <div id="cursorLayer"></div>
+
+<div id="shortcutsOverlay" class="modal-overlay">
+  <div class="modal" style="width: 420px; text-align: left">
+    <h3 style="text-align:center">Keyboard shortcuts</h3>
+    <div class="shortcuts-grid">
+      <div><b>Tools</b>
+        <div>V select · H pan · P pen</div>
+        <div>R rect · O ellipse · L line · A arrow</div>
+        <div>S sticky · T text · M mindmap</div>
+        <div>K laser · E eraser</div>
+      </div>
+      <div><b>Edit</b>
+        <div>⌘Z undo · ⌘⇧Z redo</div>
+        <div>⌘C copy · ⌘X cut · ⌘V paste · ⌘D duplicate</div>
+        <div>Delete remove · ⌘A select all</div>
+        <div>⌘L lock · ⌘⇧L unlock all</div>
+      </div>
+      <div><b>Mindmap</b>
+        <div>Tab add child · Enter add sibling</div>
+      </div>
+      <div><b>View &amp; pages</b>
+        <div>G snap to grid · ] / [ front / back</div>
+        <div>Space-drag or two fingers to pan</div>
+        <div>Pinch or ⌘+scroll to zoom</div>
+        <div>PageUp / PageDown switch pages</div>
+      </div>
+      <div><b>Other</b>
+        <div>Esc cancel / exit presenter</div>
+        <div>Shift while drawing snaps angles</div>
+      </div>
+    </div>
+    <button class="btn" id="shortcutsClose" style="margin-top:16px">Close</button>
+  </div>
+</div>
+
+<div id="recentBoardsOverlay" class="modal-overlay">
+  <div class="modal" style="width: 400px">
+    <h3>Recent boards</h3>
+    <p>Boards you've opened on this browser — no account needed. Sign up to access boards from any device instead.</p>
+    <div id="recentBoardsList"></div>
+    <button class="btn" id="recentBoardsClose">Close</button>
+  </div>
+</div>
 
 <div id="myBoardsOverlay" class="modal-overlay">
   <div class="modal" style="width: 400px">
@@ -1326,6 +1377,10 @@ function hasMindChildren(id) {
   return state.shapes.some(s => s.type === 'mindnode' && s.parentId === id);
 }
 
+// remembers the last mindnode you touched, so Tab/Enter can keep extending
+// the map even after you've clicked away or deselected everything
+let lastMindNodeId = null;
+
 function createMindNode(cx, cy, parentId) {
   const isRoot = !parentId;
   const palette = isRoot ? { fill: '#eef2ff', stroke: '#4f6df5' } : MIND_PALETTE[Math.floor(Math.random() * MIND_PALETTE.length)];
@@ -1348,6 +1403,7 @@ function addMindChild(parent) {
   state.shapes.push(s);
   setTool('select');
   state.selectedIds = new Set([s.id]);
+  lastMindNodeId = s.id;
   render(); scheduleSave();
   startTextEdit(0, 0, s);
 }
@@ -1361,6 +1417,7 @@ function addMindSibling(node) {
   state.shapes.push(s);
   setTool('select');
   state.selectedIds = new Set([s.id]);
+  lastMindNodeId = s.id;
   render(); scheduleSave();
   startTextEdit(0, 0, s);
 }
@@ -1412,11 +1469,65 @@ function cursorFor() {
 }
 function updateCursor() { board.style.cursor = cursorFor(); }
 
+/* ---------- touch: pinch-to-zoom + two-finger pan ---------- */
+const activeTouches = new Map(); // pointerId -> {x, y}
+let pinchState = null; // {startDist, startMidX, startMidY, startZoom, startPanX, startPanY}
+
+function touchDist() {
+  const [a, b] = [...activeTouches.values()];
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+function touchMid() {
+  const [a, b] = [...activeTouches.values()];
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
 board.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'touch') return;
+  activeTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (activeTouches.size === 2) {
+    // a second finger just landed — abandon whatever the first finger was doing and pinch instead
+    if (drawing) drawing = null;
+    action = 'pinch';
+    const mid = touchMid();
+    pinchState = { startDist: touchDist(), startMidX: mid.x, startMidY: mid.y, startZoom: state.zoom, startPanX: state.panX, startPanY: state.panY };
+  }
+}, { capture: true });
+
+board.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'touch' || !activeTouches.has(e.pointerId)) return;
+  activeTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (action === 'pinch' && pinchState && activeTouches.size === 2) {
+    const dist = touchDist(), mid = touchMid();
+    const newZoom = Math.max(0.1, Math.min(8, pinchState.startZoom * (dist / pinchState.startDist)));
+    // keep the point under the fingers' midpoint stationary while zooming, then apply any pan from moving the midpoint
+    const wp = { x: (pinchState.startMidX - pinchState.startPanX) / pinchState.startZoom, y: (pinchState.startMidY - pinchState.startPanY) / pinchState.startZoom };
+    state.zoom = newZoom;
+    state.panX = mid.x - wp.x * newZoom;
+    state.panY = mid.y - wp.y * newZoom;
+    document.getElementById('zoomLevel').textContent = Math.round(state.zoom * 100) + '%';
+    render();
+  }
+}, { capture: true });
+
+function endTouch(e) {
+  if (e.pointerType !== 'touch') return;
+  activeTouches.delete(e.pointerId);
+  if (activeTouches.size < 2 && action === 'pinch') {
+    action = null;
+    pinchState = null;
+    scheduleSave();
+  }
+}
+board.addEventListener('pointerup', endTouch, { capture: true });
+board.addEventListener('pointercancel', endTouch, { capture: true });
+
+board.addEventListener('pointerdown', e => {
+  if (action === 'pinch' || activeTouches.size >= 2) return;
   if (e.button === 1 || spaceDown || state.tool === 'pan' || e.button === 2) {
     action = 'pan';
     pointerStart = { x: e.clientX, y: e.clientY, panX: state.panX, panY: state.panY };
-    board.setPointerCapture(e.pointerId);
+    try { board.setPointerCapture(e.pointerId); } catch {}
     updateCursor();
     return;
   }
@@ -1426,7 +1537,7 @@ board.addEventListener('pointerdown', e => {
   const wp = toWorld(e.clientX, e.clientY);
   worldStart = wp;
   pointerStart = { x: e.clientX, y: e.clientY };
-  board.setPointerCapture(e.pointerId);
+  try { board.setPointerCapture(e.pointerId); } catch {}
 
   const style = { stroke: state.strokeColor, fill: state.fillColor, strokeWidth: state.strokeWidth, opacity: state.opacity };
 
@@ -1467,6 +1578,7 @@ board.addEventListener('pointerdown', e => {
     action = null;
     setTool('select');
     state.selectedIds = new Set([s.id]);
+    lastMindNodeId = s.id;
     startTextEdit(0, 0, s);
   } else if (state.tool === 'select') {
     // resize handles take priority over shape hits
@@ -1497,6 +1609,7 @@ board.addEventListener('pointerdown', e => {
       } else if (!state.selectedIds.has(hit.id)) {
         state.selectedIds = new Set([hit.id]);
       }
+      if (hit.type === 'mindnode') lastMindNodeId = hit.id;
       action = 'move';
       moveOrigSnapshot = JSON.stringify(state.shapes);
       moveOrigBounds = selectionBounds();
@@ -1531,6 +1644,7 @@ function eraseAt(wp) {
 let preEraseSnapshot = null;
 
 board.addEventListener('pointermove', e => {
+  if (action === 'pinch') return; // handled entirely by the touch-tracking listener above
   if (!action) {
     if (state.tool === 'select' && !spaceDown) {
       const h = state.selectedIds.size ? handleAt(e.clientX, e.clientY) : null;
@@ -1630,6 +1744,7 @@ board.addEventListener('pointermove', e => {
 });
 
 board.addEventListener('pointerup', e => {
+  if (action === 'pinch') return; // handled entirely by the touch-tracking listener above
   if (action === 'draw' && drawing) {
     const b = shapeBounds(drawing);
     const tooSmall = drawing.type !== 'pen' && b.w < 2 / state.zoom && b.h < 2 / state.zoom;
@@ -1688,8 +1803,9 @@ board.addEventListener('pointerup', e => {
 board.addEventListener('dblclick', e => {
   const wp = toWorld(e.clientX, e.clientY);
   const hit = shapeAt(wp);
-  if (hit && (hit.type === 'text' || hit.type === 'sticky')) {
+  if (hit && (hit.type === 'text' || hit.type === 'sticky' || hit.type === 'mindnode')) {
     state.selectedIds.clear();
+    if (hit.type === 'mindnode') lastMindNodeId = hit.id;
     startTextEdit(0, 0, hit);
   } else if (state.tool === 'select') {
     startTextEdit(wp.x, wp.y);
@@ -1844,9 +1960,16 @@ addEventListener('keydown', e => {
 
   if (e.key === ' ') { spaceDown = true; updateCursor(); e.preventDefault(); return; }
   if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelection(); return; }
-  if ((e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) && state.selectedIds.size === 1) {
-    const node = state.shapes.find(s => state.selectedIds.has(s.id));
-    if (node && node.type === 'mindnode') {
+  if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+    let node = null;
+    if (state.selectedIds.size === 1) {
+      const sel = state.shapes.find(s => state.selectedIds.has(s.id));
+      if (sel && sel.type === 'mindnode') node = sel;
+    } else if (state.selectedIds.size === 0 && lastMindNodeId && (state.tool === 'select' || state.tool === 'mindmap')) {
+      // nothing selected, but you were just working on a mindmap — keep extending it without forcing a reselect
+      node = state.shapes.find(s => s.id === lastMindNodeId && s.type === 'mindnode') || null;
+    }
+    if (node) {
       e.preventDefault();
       (e.key === 'Tab' ? addMindChild : addMindSibling)(node);
       return;
@@ -1856,10 +1979,12 @@ addEventListener('keydown', e => {
     if (document.getElementById('confirmOverlay').classList.contains('open')) { settleConfirm(false); return; }
     if (document.getElementById('promptOverlay').classList.contains('open')) { settlePrompt(null); return; }
     if (document.getElementById('newBoardOverlay').classList.contains('open')) { closeNewBoardModal(); return; }
+    if (document.getElementById('shortcutsOverlay').classList.contains('open')) { document.getElementById('shortcutsOverlay').classList.remove('open'); return; }
     if (presenting) { togglePresenter(); return; }
     state.selectedIds.clear(); render(); return;
   }
 
+  if (e.key === '?') { e.preventDefault(); openShortcuts(); return; }
   if (e.key.toLowerCase() === 'g') { toggleSnap(); return; }
   if (e.key === 'PageDown') { e.preventDefault(); gotoPage(pageIdx + 1); return; }
   if (e.key === 'PageUp') { e.preventDefault(); gotoPage(pageIdx - 1); return; }
@@ -2611,6 +2736,7 @@ function scheduleSharePush() {
           if (!liveCollab) {
             localStorage.setItem(PERSONAL_BOARD_KEY, shareId);
             history.replaceState(null, '', '/app?b=' + shareId);
+            touchRecentBoard(shareId);
           }
         }
       } else {
@@ -2688,7 +2814,9 @@ function startCollabLoops() {
   // background tabs keep no benefit from polling — this alone was most of the wasted quota
   if (document.hidden) { updateShareUI(); return; }
   sharePollTimer = setInterval(sharePoll, 1200);
-  presencePollTimer = setInterval(pollPresence, 700);
+  // polling (reads) is cheap and generously free-tier'd, so this can run often for smooth motion;
+  // the send rate below is left untouched since KV *writes* are the tightly-capped resource
+  presencePollTimer = setInterval(pollPresence, 400);
   presenceSendTimer = setInterval(sendPresenceTick, 400);
   updateShareUI();
 }
@@ -2758,6 +2886,7 @@ async function collabJoin(id) {
     applyRemoteDoc(d.doc);
     uid += Math.floor(Math.random() * 1e6);
     startCollabLoops();
+    touchRecentBoard(id, 'Joined board');
     toast('Joined shared board — changes sync live');
     return true;
   } catch {
@@ -2888,6 +3017,7 @@ async function personalCloudInit(urlId) {
           shareRev = d.rev;
           localStorage.setItem(PERSONAL_BOARD_KEY, stored);
           loadCloudDoc(d.doc);
+          touchRecentBoard(stored);
           if (urlId) history.replaceState(null, '', '/app?b=' + stored);
           return;
         }
@@ -2929,6 +3059,99 @@ function timeAgo(ts) {
 const ICON_OPEN = '<svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
 const ICON_RENAME = '<svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
 const ICON_TRASH = '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+
+/* ---------- recent boards (local device history — no account needed) ---------- */
+const RECENT_BOARDS_KEY = 'wb_recent_boards';
+
+function getRecentBoards() {
+  try { return JSON.parse(localStorage.getItem(RECENT_BOARDS_KEY) || '[]'); } catch { return []; }
+}
+function touchRecentBoard(id, name) {
+  if (!id) return;
+  const list = getRecentBoards();
+  const existing = list.find(b => b.id === id);
+  const kept = list.filter(b => b.id !== id);
+  kept.unshift({ id, name: name || existing?.name || 'Untitled board', lastOpened: Date.now() });
+  localStorage.setItem(RECENT_BOARDS_KEY, JSON.stringify(kept.slice(0, 20)));
+}
+function renameRecentBoard(id, name) {
+  const list = getRecentBoards();
+  const b = list.find(x => x.id === id);
+  if (b) { b.name = name; localStorage.setItem(RECENT_BOARDS_KEY, JSON.stringify(list)); }
+}
+function removeRecentBoard(id) {
+  localStorage.setItem(RECENT_BOARDS_KEY, JSON.stringify(getRecentBoards().filter(b => b.id !== id)));
+}
+
+async function openRecentBoard(id) {
+  if (id === shareId) { document.getElementById('recentBoardsOverlay').classList.remove('open'); return; }
+  try {
+    const r = await fetch(`/api/share?id=${id}&rev=0`);
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    leaveCurrentShare();
+    shareId = id;
+    shareRev = d.rev;
+    localStorage.setItem(PERSONAL_BOARD_KEY, id);
+    undoStack = []; redoStack = [];
+    state.selectedIds.clear();
+    loadCloudDoc(d.doc);
+    touchRecentBoard(id);
+    history.replaceState(null, '', '/app?b=' + id);
+    document.getElementById('recentBoardsOverlay').classList.remove('open');
+    toast('Board opened');
+  } catch {
+    toast('Could not open that board — it may no longer exist');
+  }
+}
+
+function refreshRecentBoardsList() {
+  const list = document.getElementById('recentBoardsList');
+  const boards = getRecentBoards();
+  if (!boards.length) {
+    list.innerHTML = '<div class="empty">No recent boards yet — draw something and it\'ll show up here.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  for (const b of boards) {
+    const row = document.createElement('div');
+    row.className = 'board-row';
+    const current = b.id === shareId;
+    row.innerHTML = `
+      <div class="board-row-main">
+        <div class="board-row-name">${esc(b.name)}${current ? ' <span style="color:var(--accent)">· current</span>' : ''}</div>
+        <div class="board-row-time">${timeAgo(b.lastOpened)}</div>
+      </div>
+      <button class="board-row-btn" data-act="open" title="Open">${ICON_OPEN}</button>
+      <button class="board-row-btn" data-act="rename" title="Rename">${ICON_RENAME}</button>
+      <button class="board-row-btn danger" data-act="remove" title="Remove from this list">${ICON_TRASH}</button>
+    `;
+    row.querySelector('[data-act="open"]').onclick = () => openRecentBoard(b.id);
+    row.querySelector('[data-act="rename"]').onclick = async () => {
+      const val = await customPrompt('This name is only stored on this browser.', { title: 'Rename board', okLabel: 'Save', value: b.name });
+      if (!val) return;
+      renameRecentBoard(b.id, val.slice(0, 60));
+      refreshRecentBoardsList();
+    };
+    row.querySelector('[data-act="remove"]').onclick = async () => {
+      const ok = await customConfirm(`Remove "${b.name}" from this list? The board itself stays saved on the server.`, { title: 'Remove from recent boards', okLabel: 'Remove' });
+      if (!ok) return;
+      removeRecentBoard(b.id);
+      refreshRecentBoardsList();
+    };
+    list.appendChild(row);
+  }
+}
+
+document.getElementById('recentBoardsItem').onclick = () => {
+  menuDropdown.classList.remove('open');
+  document.getElementById('recentBoardsOverlay').classList.add('open');
+  refreshRecentBoardsList();
+};
+document.getElementById('recentBoardsClose').onclick = () => document.getElementById('recentBoardsOverlay').classList.remove('open');
+document.getElementById('recentBoardsOverlay').onclick = e => {
+  if (e.target.id === 'recentBoardsOverlay') document.getElementById('recentBoardsOverlay').classList.remove('open');
+};
 
 async function refreshBoardsList() {
   const list = document.getElementById('boardsList');
@@ -2994,6 +3217,16 @@ async function openCloudBoard(id) {
     toast('Could not open that board');
   }
 }
+
+function openShortcuts() {
+  menuDropdown.classList.remove('open');
+  document.getElementById('shortcutsOverlay').classList.add('open');
+}
+document.getElementById('shortcutsItem').onclick = openShortcuts;
+document.getElementById('shortcutsClose').onclick = () => document.getElementById('shortcutsOverlay').classList.remove('open');
+document.getElementById('shortcutsOverlay').onclick = e => {
+  if (e.target.id === 'shortcutsOverlay') document.getElementById('shortcutsOverlay').classList.remove('open');
+};
 
 document.getElementById('myBoardsItem').onclick = () => {
   menuDropdown.classList.remove('open');

@@ -10,3 +10,20 @@ not_found_handling = "404-page"
 [[kv_namespaces]]
 binding = "KV"
 id = "106b0724d30c48a8a88e1c2d7cbd98b5"
+
+# native rate limiting — costs nothing extra and doesn't touch the KV write quota,
+# unlike a KV-counter-based limiter would
+[[unsafe.bindings]]
+name = "RL_AUTH"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }
+
+# only guards board/share *creation* (spammable, unauthenticated) — autosave
+# PUTs and presence writes are deliberately left unthrottled here since those
+# happen every ~400ms during completely normal, legitimate use
+[[unsafe.bindings]]
+name = "RL_CREATE"
+type = "ratelimit"
+namespace_id = "1002"
+simple = { limit = 10, period = 60 }

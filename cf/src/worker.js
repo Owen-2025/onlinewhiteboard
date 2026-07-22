@@ -17,6 +17,22 @@ async function readBody(request) {
   try { return await request.json(); } catch { return null; }
 }
 
+function clientIp(request) {
+  return request.headers.get('cf-connecting-ip') || 'unknown';
+}
+
+/** Returns a 429 Response if the limiter says no, otherwise null. Fails open if the
+ *  binding is missing (e.g. local dev) so a config hiccup never takes the whole API down. */
+async function rateLimited(env, limiter, request) {
+  const rl = env[limiter];
+  if (!rl) return null;
+  try {
+    const { success } = await rl.limit({ key: clientIp(request) });
+    if (!success) return json(429, { error: 'Too many requests — please slow down and try again shortly' });
+  } catch {}
+  return null;
+}
+
 /* ---------- /api/auth ---------- */
 async function handleAuth(request, env) {
   const { KV, AUTH_SECRET } = env;
@@ -31,6 +47,11 @@ async function handleAuth(request, env) {
   if (request.method !== 'POST') return json(405, { error: 'method not allowed' });
   const body = await readBody(request);
   const { action, email: rawEmail, password } = body || {};
+
+  if (action !== 'logout') {
+    const limited = await rateLimited(env, 'RL_AUTH', request);
+    if (limited) return limited;
+  }
 
   if (action === 'logout') {
     return json(200, { ok: true }, { 'set-cookie': sessionCookie('', 0) });
@@ -92,6 +113,8 @@ async function handleBoard(request, env, url) {
   }
 
   if (request.method === 'POST') {
+    const limited = await rateLimited(env, 'RL_CREATE', request);
+    if (limited) return limited;
     const body = await readBody(request);
     const { doc, name } = body || {};
     if (!doc || !Array.isArray(doc.pages)) return json(400, { error: 'bad doc' });
@@ -163,6 +186,8 @@ async function handleShare(request, env, url) {
   }
 
   if (request.method === 'POST') {
+    const limited = await rateLimited(env, 'RL_CREATE', request);
+    if (limited) return limited;
     const body = await readBody(request);
     const doc = body?.doc;
     if (!doc || !Array.isArray(doc.pages)) return json(400, { error: 'bad doc' });
