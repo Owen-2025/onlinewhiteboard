@@ -722,11 +722,11 @@ function scheduleSave() {
   saveTimer = setTimeout(() => {
     try {
       stashCurrentPage();
-      if (shareId) { scheduleSharePush(); return; } // shared boards live on the server, not in personal storage
       const slim = pages.map(p => ({ name: p.name, shapes: p.shapes || [], panX: p.panX || 0, panY: p.panY || 0, zoom: p.zoom || 1 }));
       idbSet('doc', { pages: slim, pageIdx, snap: state.snap, dark: !!state.dark })
-        .catch(() => toast('Warning: could not save board'));
-      scheduleCloudSave();
+        .catch(() => toast('Warning: could not save board')); // local cache only — the web copy below is what's authoritative
+      if (shareId || !cloudUser) scheduleSharePush(); // no account: every board saves to the web by default
+      else scheduleCloudSave();
     } catch (e) {}
   }, 300);
 }
@@ -2213,6 +2213,7 @@ document.getElementById('fileInput').addEventListener('change', e => {
       // a locally-opened file is a distinct board, not an overwrite of the one you had open
       cloudBoardId = null;
       cloudBoardName = null;
+      leaveCurrentShare();
       zoomToFit();
       scheduleSave();
       toast('Board loaded');
@@ -2300,15 +2301,8 @@ document.getElementById('choiceBlank').onclick = async () => {
     closeNewBoardModal();
   }
 
-  // leave any shared session — a fresh board is personal, not the group's
-  if (shareId) {
-    stopCollabLoops();
-    shareId = null;
-    updateShareUI();
-    history.replaceState(null, '', '/app');
-  }
-
   // a "new" board is a distinct saved item, not an overwrite of the one you had open
+  leaveCurrentShare();
   cloudBoardId = null;
   cloudBoardName = null;
 
@@ -2466,8 +2460,12 @@ document.getElementById('renameItem').onclick = async () => {
 };
 
 /* ---------- realtime collaboration (shared boards) ---------- */
+// `shareId` doubles as two things: a board you're actively co-editing with others
+// (liveCollab = true), and — for anyone without an account — the quiet default
+// storage for their one personal board (liveCollab = false, no presence/cursors).
 let shareId = null;
 let shareRev = 0;
+let liveCollab = false;
 let sharePushTimer = null;
 let sharePollTimer = null;
 let presencePollTimer = null;
@@ -2476,10 +2474,21 @@ let sharePushing = false;
 let remotePresences = [];
 const cursorEls = new Map(); // clientId -> DOM node
 let myCursorWorld = null;
+const PERSONAL_BOARD_KEY = 'wb_personal_board';
 
 function updateShareUI() {
-  document.getElementById('shareLabel').textContent = shareId ? 'Copy share link' : 'Share & collaborate';
-  document.getElementById('shareStatus').textContent = shareId ? 'live ●' : '';
+  document.getElementById('shareLabel').textContent = liveCollab ? 'Copy share link' : 'Share & collaborate';
+  document.getElementById('shareStatus').textContent = liveCollab ? 'live ●' : '';
+}
+
+function leaveCurrentShare() {
+  if (!shareId) return;
+  stopCollabLoops();
+  if (shareId === localStorage.getItem(PERSONAL_BOARD_KEY)) localStorage.removeItem(PERSONAL_BOARD_KEY);
+  shareId = null;
+  liveCollab = false;
+  updateShareUI();
+  history.replaceState(null, '', '/app');
 }
 
 function shareLink() { return location.origin + '/app?share=' + shareId; }
@@ -2544,16 +2553,33 @@ function renderCursors() {
 function scheduleSharePush() {
   clearTimeout(sharePushTimer);
   sharePushTimer = setTimeout(async () => {
-    if (!shareId) return;
     sharePushing = true;
     try {
-      const r = await fetch('/api/share', {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id: shareId, doc: currentDoc() }),
-      });
-      const d = await r.json();
-      if (d.rev) shareRev = d.rev;
+      if (!shareId) {
+        // no board yet (first edit ever, or just started a fresh one) — create it now
+        const r = await fetch('/api/share', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ doc: currentDoc() }),
+        });
+        const d = await r.json();
+        if (d.id) {
+          shareId = d.id;
+          shareRev = d.rev;
+          if (!liveCollab) {
+            localStorage.setItem(PERSONAL_BOARD_KEY, shareId);
+            history.replaceState(null, '', '/app?b=' + shareId);
+          }
+        }
+      } else {
+        const r = await fetch('/api/share', {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id: shareId, doc: currentDoc() }),
+        });
+        const d = await r.json();
+        if (d.rev) shareRev = d.rev;
+      }
     } catch {}
     sharePushing = false;
   }, 500);
@@ -2578,7 +2604,7 @@ async function sharePoll() {
 }
 
 async function pollPresence() {
-  if (!shareId) return;
+  if (!liveCollab) return;
   try {
     const r = await fetch(`/api/presence?id=${shareId}`);
     if (!r.ok) return;
@@ -2590,7 +2616,7 @@ async function pollPresence() {
 
 let lastSentCursor = null;
 function sendPresenceTick() {
-  if (!shareId || !myCursorWorld) return;
+  if (!liveCollab || !myCursorWorld) return;
   // skip the write entirely if the cursor hasn't actually moved — idle tabs shouldn't burn blob quota
   if (lastSentCursor && Math.hypot(myCursorWorld.x - lastSentCursor.x, myCursorWorld.y - lastSentCursor.y) < 2 / state.zoom) return;
   lastSentCursor = { x: myCursorWorld.x, y: myCursorWorld.y };
@@ -2602,7 +2628,7 @@ function sendPresenceTick() {
 }
 
 board.addEventListener('pointermove', e => {
-  if (shareId) myCursorWorld = toWorld(e.clientX, e.clientY);
+  if (liveCollab) myCursorWorld = toWorld(e.clientX, e.clientY);
 });
 
 addEventListener('pagehide', () => {
@@ -2628,12 +2654,14 @@ function startCollabLoops() {
 document.addEventListener('visibilitychange', () => {
   if (!shareId) return;
   if (document.hidden) {
-    clearInterval(sharePollTimer); sharePollTimer = null;
-    clearInterval(presencePollTimer); presencePollTimer = null;
-    clearInterval(presenceSendTimer); presenceSendTimer = null;
+    if (liveCollab) {
+      clearInterval(sharePollTimer); sharePollTimer = null;
+      clearInterval(presencePollTimer); presencePollTimer = null;
+      clearInterval(presenceSendTimer); presenceSendTimer = null;
+    }
   } else {
-    startCollabLoops();
-    sharePoll(); // catch up immediately instead of waiting for the next tick
+    if (liveCollab) startCollabLoops();
+    sharePoll(); // catch up on any cross-device edits either way
   }
 });
 
@@ -2652,16 +2680,20 @@ function stopCollabLoops() {
 
 async function startSharing() {
   try {
-    const r = await fetch('/api/share', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ doc: currentDoc() }),
-    });
-    const d = await r.json();
-    if (!d.id) throw new Error();
-    shareId = d.id;
-    shareRev = d.rev;
-    uid += Math.floor(Math.random() * 1e6); // avoid shape-id collisions between collaborators
+    if (!shareId) {
+      // no board on the server yet at all (rare — usually one's already there by default) — make one
+      const r = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ doc: currentDoc() }),
+      });
+      const d = await r.json();
+      if (!d.id) throw new Error();
+      shareId = d.id;
+      shareRev = d.rev;
+      uid += Math.floor(Math.random() * 1e6); // avoid shape-id collisions between collaborators
+    }
+    liveCollab = true;
     history.replaceState(null, '', '/app?share=' + shareId);
     startCollabLoops();
     await navigator.clipboard.writeText(shareLink()).catch(() => {});
@@ -2678,6 +2710,7 @@ async function collabJoin(id) {
     const d = await r.json();
     shareId = id;
     shareRev = d.rev;
+    liveCollab = true;
     uid = 1;
     pageIdx = Math.min(d.doc.pageIdx || 0, d.doc.pages.length - 1);
     applyRemoteDoc(d.doc);
@@ -2694,7 +2727,7 @@ async function collabJoin(id) {
 
 document.getElementById('shareBtn').onclick = async () => {
   menuDropdown.classList.remove('open');
-  if (shareId) {
+  if (liveCollab) {
     await navigator.clipboard.writeText(shareLink()).catch(() => {});
     toast('Share link copied');
   } else {
@@ -2797,6 +2830,34 @@ async function cloudInit() {
   }
 }
 
+/* ---------- default web storage for boards with no account ----------
+   Every visitor gets their board saved to the server automatically, with no
+   sign-up required — it's the same "share" mechanism collaboration uses,
+   just quietly, for one person, with no presence/cursors (see liveCollab). */
+async function personalCloudInit(urlId) {
+  const stored = urlId || localStorage.getItem(PERSONAL_BOARD_KEY);
+  if (stored) {
+    try {
+      const r = await fetch(`/api/share?id=${stored}&rev=0`);
+      if (r.ok) {
+        const d = await r.json();
+        if (d.doc) {
+          shareId = stored;
+          shareRev = d.rev;
+          localStorage.setItem(PERSONAL_BOARD_KEY, stored);
+          loadCloudDoc(d.doc);
+          if (urlId) history.replaceState(null, '', '/app?b=' + stored);
+          return;
+        }
+      }
+    } catch {}
+    localStorage.removeItem(PERSONAL_BOARD_KEY); // stale reference — a fresh board gets created below
+  }
+  // nothing on the server yet: if there's existing content (e.g. from before this feature), push it up now
+  const hasContent = pages.some(p => (p.shapes || []).length) || state.shapes.length;
+  if (hasContent) scheduleSharePush();
+}
+
 document.getElementById('accountItem').onclick = () => {
   menuDropdown.classList.remove('open');
   if (!cloudUser) location.href = '/?login=1';
@@ -2810,7 +2871,7 @@ document.getElementById('signOutItem').onclick = async () => {
   cloudBoardId = null;
   cloudBoardName = null;
   updateAccountUI();
-  toast('Signed out — board stays on this device');
+  toast('Signed out — this board will keep saving to the web, just without an account');
 };
 
 /* ---------- My boards ---------- */
@@ -2879,7 +2940,7 @@ async function openCloudBoard(id) {
     const r = await fetch(`/api/board?id=${id}`);
     if (!r.ok) throw new Error();
     const d = await r.json();
-    if (shareId) { stopCollabLoops(); shareId = null; updateShareUI(); history.replaceState(null, '', '/app'); }
+    leaveCurrentShare();
     cloudBoardId = id;
     cloudBoardName = d.name;
     undoStack = []; redoStack = [];
@@ -2949,11 +3010,15 @@ loadSaved().finally(() => {
   updateHistoryButtons();
   document.getElementById('zoomLevel').textContent = Math.round(state.zoom * 100) + '%';
   render();
-  const shareParam = new URLSearchParams(location.search).get('share');
+  const params = new URLSearchParams(location.search);
+  const shareParam = params.get('share');
+  const personalParam = params.get('b');
   if (shareParam) {
-    collabJoin(shareParam).then(ok => { if (!ok) cloudInit(); });
+    collabJoin(shareParam).then(ok => {
+      if (!ok) cloudInit().then(() => { if (!cloudUser) personalCloudInit(personalParam); });
+    });
   } else {
-    cloudInit();
+    cloudInit().then(() => { if (!cloudUser) personalCloudInit(personalParam); });
   }
 });
 </script>
