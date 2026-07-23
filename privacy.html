@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Online Whiteboard</title>
+<style>
+  :root {
+    --bg: #f7f7f8; --panel: #ffffff; --border: #e2e2e6; --text: #1c1c21;
+    --muted: #8a8a93; --accent: #4f6df5; --shadow: 0 4px 16px rgba(0,0,0,.08); --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; }
+  a { color: var(--accent); }
+  h1 { font-size: 28px; margin-bottom: 6px; }
+  .updated { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+  h2 { font-size: 18px; margin: 32px 0 10px; }
+  p, li { color: var(--text); font-size: 15px; margin-bottom: 10px; }
+  ul { padding-left: 22px; margin-bottom: 12px; }
+  .back { display: inline-block; margin-bottom: 24px; font-size: 14px; }
+  .note { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; font-size: 13.5px; color: var(--muted); margin-top: 32px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">← Online Whiteboard</a>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: 23 July 2026</p>
+
+  <p>This page explains what data Online Whiteboard collects, why, and how you can control it. We built this tool to be usable with no account at all, so by default we collect as little as possible.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><b>If you don't create an account:</b> your board is identified by a random ID generated in your browser. We store the drawing data itself and, if you use it, a display name you can change at any time. No personal information is required or collected.</li>
+    <li><b>If you sign up:</b> your email address and a securely hashed password (we never store your actual password — it's hashed with PBKDF2 and cannot be reversed). We also set a session cookie so you stay signed in; it identifies your account and nothing else.</li>
+    <li><b>Board content:</b> whatever you draw, type, or upload (images) to a board is stored so it can be reopened later, by you or by anyone you share a board link with.</li>
+    <li><b>Live collaboration:</b> while a board is actively shared with others, we temporarily store your cursor position, display name, and an assigned color so collaborators can see who's on the board. This data automatically expires within about a minute of you closing the tab or going idle.</li>
+    <li><b>Technical data:</b> your IP address is processed transiently to prevent abuse (e.g. spam sign-ups or excessive board creation). We don't log or retain IP addresses beyond this.</li>
+  </ul>
+
+  <h2>Where your data lives</h2>
+  <p>Boards, accounts, and related data are stored using Cloudflare's infrastructure (Workers KV). We don't sell, rent, or share your data with advertisers, and we don't run any analytics or advertising trackers on this site.</p>
+  <p>One external resource is loaded on the drawing page: Google Fonts, used only if you choose the "Handwritten" font option. Loading it reveals your IP address to Google in the same way any embedded web font does — this only happens if you use that specific font.</p>
+
+  <h2>How long we keep it</h2>
+  <p>Boards are kept until you delete them. Live-collaboration presence data (cursor positions, names) expires automatically within about a minute of inactivity. Account data is kept until you ask us to delete it.</p>
+
+  <h2>Your rights</h2>
+  <p>You can export or delete your own boards at any time from within the app. To request deletion of your account or data we hold about you, or to ask any question about this policy, contact us at <a href="mailto:privacy@boardsy.uk">privacy@boardsy.uk</a>.</p>
+
+  <h2>Children's privacy</h2>
+  <p>This service is not directed at children under 13, and we don't knowingly collect data from them.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If this policy changes, we'll update the date at the top of this page. Continued use of the service after a change means you accept the updated policy.</p>
+
+  <div class="note">This policy is written in plain language for a small, independent project. It isn't a substitute for formal legal advice — if you have specific concerns, please get in touch using the address above.</div>
+</div>
+</body>
+</html>
