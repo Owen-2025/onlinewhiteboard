@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About — Online Whiteboard</title>
+<meta name="description" content="Why Online Whiteboard is free, how it's built, and why we chose donations over a subscription.">
+<style>
+  :root {
+    --bg: #f7f7f8; --panel: #ffffff; --border: #e2e2e6; --text: #1c1c21;
+    --muted: #8a8a93; --accent: #4f6df5; --accent-soft: #e8ecfe; --shadow: 0 4px 16px rgba(0,0,0,.08); --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; }
+  a { color: var(--accent); }
+  h1 { font-size: 30px; margin-bottom: 10px; letter-spacing: -.01em; }
+  .lede { font-size: 16px; color: var(--muted); margin-bottom: 36px; }
+  h2 { font-size: 19px; margin: 34px 0 10px; }
+  p, li { font-size: 15px; margin-bottom: 10px; }
+  ul { padding-left: 22px; margin-bottom: 12px; }
+  .back { display: inline-block; margin-bottom: 24px; font-size: 14px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; margin: 16px 0;
+  }
+  .card h3 { font-size: 15px; margin-bottom: 6px; }
+  .card p { color: var(--muted); font-size: 13.5px; margin-bottom: 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0 8px; }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+  .cta { margin-top: 32px; padding: 20px; background: var(--accent-soft); border-radius: var(--radius); text-align: center; }
+  .cta a {
+    display: inline-block; margin-top: 10px; padding: 10px 22px; background: var(--accent);
+    color: #fff; border-radius: 9px; text-decoration: none; font-weight: 600; font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">← Online Whiteboard</a>
+  <h1>About this project</h1>
+  <p class="lede">Why it's free, how it's built, and why we ask for donations instead of a subscription.</p>
+
+  <h2>Why donations, not a subscription</h2>
+  <p>A subscription model only works if there's something worth paying to unlock — which means deliberately holding back features from people who don't pay. We didn't want to build a product that gets better the more you spend, or worse if you can't. Everyone who opens this tool gets the same drawing tools, the same exports, the same real-time collaboration, whether they've ever given us a penny or not.</p>
+  <p>Donations flip that around: they're a way for people who find this useful to support it, entirely optionally, without anyone else losing anything. Nobody sees a locked feature and nobody is asked to pay to keep using what they already have. If that ever changes, it'll be disclosed here first.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Subscription model</h3>
+      <p>Some features withheld by design. Paying unlocks more. Free tier exists to create pressure to upgrade.</p>
+    </div>
+    <div class="card">
+      <h3>Our model</h3>
+      <p>Everything is available to everyone. Donations are a thank-you, not a requirement.</p>
+    </div>
+  </div>
+
+  <h2>How it's built</h2>
+  <ul>
+    <li><b>Runs in your browser.</b> Drawing, undo/redo, and exporting all happen locally on your device — the server's job is just to save and sync your boards.</li>
+    <li><b>No ads, no trackers.</b> We don't run advertising, analytics pixels, or third-party trackers. See the <a href="/privacy">Privacy Policy</a> for exactly what's collected.</li>
+    <li><b>Open source.</b> The full source is public on <a href="https://github.com/Owen-2025/onlinewhiteboard">GitHub</a> — you don't have to take our word for any of this.</li>
+    <li><b>Independently built and maintained.</b> This isn't backed by advertising revenue or investors with a growth target to hit — which is a large part of why we can commit to keeping the core tool free.</li>
+  </ul>
+
+  <h2>What we're optimizing for</h2>
+  <p>Speed and simplicity over feature-bloat. A board should open instantly, drawing should feel immediate, and nothing should require an account unless you specifically want multiple saved boards across devices. When we add something new, the test is whether it makes the tool better to use — not whether it gives us a new thing to charge for.</p>
+
+  <div class="cta">
+    <div>If this tool has been useful to you, consider chipping in — no obligation, no unlocks, just a thank-you.</div>
+    <a href="https://ko-fi.com/REPLACE_ME">☕ Support this project</a>
+  </div>
+</div>
+</body>
+</html>

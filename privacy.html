@@ -41,6 +41,13 @@
 
   <h2>Where your data lives</h2>
   <p>Boards, accounts, and related data are stored using Cloudflare's infrastructure (Workers KV). We don't sell, rent, or share your data with advertisers, and we don't run any analytics or advertising trackers on this site.</p>
+
+  <h2>Account data vs. board content</h2>
+  <p>We treat these differently, and you should too:</p>
+  <ul>
+    <li><b>Account data</b> (your email, password) is protected with password hashing (PBKDF2) — we never store or can see your actual password, even internally.</li>
+    <li><b>Board content</b> (what you draw, type, or upload) is stored as-is, without end-to-end encryption. Please don't put highly sensitive personal information — passwords, financial details, ID numbers, health information — into a board. Treat a board's contents with the same care you'd give a shared document, not a password manager. See the <a href="/terms">Terms of Service</a> for how this affects liability.</li>
+  </ul>
   <p>One external resource is loaded on the drawing page: Google Fonts, used only if you choose the "Handwritten" font option. Loading it reveals your IP address to Google in the same way any embedded web font does — this only happens if you use that specific font.</p>
 
   <h2>How long we keep it</h2>
