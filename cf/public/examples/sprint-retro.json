@@ -1,0 +1,28 @@
+{
+  "app": "whiteboard",
+  "version": 2,
+  "pages": [
+    {
+      "name": "Sprint Retro",
+      "panX": 0, "panY": 0, "zoom": 1,
+      "shapes": [
+        { "id": 1, "type": "text", "x": 60, "y": 40, "text": "What went well", "fontSize": 22, "fontFamily": "sans", "stroke": "#2f9e44", "strokeWidth": 0, "opacity": 1, "w": 220, "h": 28 },
+        { "id": 2, "type": "text", "x": 420, "y": 40, "text": "What could improve", "fontSize": 22, "fontFamily": "sans", "stroke": "#e03131", "strokeWidth": 0, "opacity": 1, "w": 260, "h": 28 },
+        { "id": 3, "type": "text", "x": 780, "y": 40, "text": "Action items", "fontSize": 22, "fontFamily": "sans", "stroke": "#f08c00", "strokeWidth": 0, "opacity": 1, "w": 180, "h": 28 },
+
+        { "id": 4, "type": "sticky", "x": 60, "y": 100, "w": 180, "h": 180, "fill": "#b2f2bb", "fontSize": 16, "fontFamily": "sans", "text": "Shipped the new export button on time", "stroke": "#33322d", "strokeWidth": 0, "opacity": 1 },
+        { "id": 5, "type": "sticky", "x": 60, "y": 300, "w": 180, "h": 180, "fill": "#b2f2bb", "fontSize": 16, "fontFamily": "sans", "text": "Great team communication this sprint", "stroke": "#33322d", "strokeWidth": 0, "opacity": 1 },
+        { "id": 6, "type": "sticky", "x": 60, "y": 500, "w": 180, "h": 180, "fill": "#b2f2bb", "fontSize": 16, "fontFamily": "sans", "text": "Fixed the critical login bug quickly", "stroke": "#33322d", "strokeWidth": 0, "opacity": 1 },
+
+        { "id": 7, "type": "sticky", "x": 420, "y": 100, "w": 180, "h": 180, "fill": "#ffc9c9", "fontSize": 16, "fontFamily": "sans", "text": "Too many meetings, not enough focus time", "stroke": "#33322d", "strokeWidth": 0, "opacity": 1 },
+        { "id": 8, "type": "sticky", "x": 420, "y": 300, "w": 180, "h": 180, "fill": "#ffc9c9", "fontSize": 16, "fontFamily": "sans", "text": "Testing started too late in the sprint", "stroke": "#33322d", "strokeWidth": 0, "opacity": 1 },
+        { "id": 9, "type": "sticky", "x": 420, "y": 500, "w": 180, "h": 180, "fill": "#ffc9c9", "fontSize": 16, "fontFamily": "sans", "text": "Unclear priorities at sprint start", "stroke": "#33322d", "strokeWidth": 0, "opacity": 1 },
+
+        { "id": 10, "type": "sticky", "x": 780, "y": 100, "w": 180, "h": 180, "fill": "#ffec99", "fontSize": 16, "fontFamily": "sans", "text": "Block out 2hr focus time daily", "stroke": "#33322d", "strokeWidth": 0, "opacity": 1 },
+        { "id": 11, "type": "sticky", "x": 780, "y": 300, "w": 180, "h": 180, "fill": "#ffec99", "fontSize": 16, "fontFamily": "sans", "text": "Start testing from day 1 next sprint", "stroke": "#33322d", "strokeWidth": 0, "opacity": 1 },
+        { "id": 12, "type": "sticky", "x": 780, "y": 500, "w": 180, "h": 180, "fill": "#ffec99", "fontSize": 16, "fontFamily": "sans", "text": "Write clearer ticket descriptions", "stroke": "#33322d", "strokeWidth": 0, "opacity": 1 }
+      ]
+    }
+  ],
+  "pageIdx": 0
+}

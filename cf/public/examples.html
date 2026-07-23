@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Examples — Online Whiteboard</title>
+<meta name="description" content="A few starting points for Online Whiteboard: mindmaps, retros, and flowcharts you can open and edit as your own.">
+<style>
+  :root {
+    --bg: #f7f7f8; --panel: #ffffff; --border: #e2e2e6; --text: #1c1c21;
+    --muted: #8a8a93; --accent: #4f6df5; --accent-soft: #e8ecfe; --shadow: 0 4px 16px rgba(0,0,0,.08); --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+  a { color: var(--accent); }
+  h1 { font-size: 30px; margin-bottom: 10px; letter-spacing: -.01em; }
+  .lede { font-size: 16px; color: var(--muted); margin-bottom: 36px; max-width: 60ch; }
+  .back { display: inline-block; margin-bottom: 24px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .card .thumb {
+    height: 140px; display: flex; align-items: center; justify-content: center;
+    font-size: 42px; background: var(--accent-soft);
+  }
+  .card .body { padding: 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .card h3 { font-size: 16px; }
+  .card p { font-size: 13.5px; color: var(--muted); flex: 1; }
+  .card .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 99px; padding: 2px 9px; }
+  .card a.open {
+    margin-top: 4px; display: inline-flex; align-items: center; justify-content: center;
+    padding: 9px 0; background: var(--accent); color: #fff; border-radius: 8px;
+    text-decoration: none; font-weight: 600; font-size: 13.5px;
+  }
+  .more {
+    margin-top: 32px; padding: 20px; border: 1px dashed var(--border); border-radius: var(--radius);
+    text-align: center; color: var(--muted); font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="/">← Online Whiteboard</a>
+  <h1>Examples</h1>
+  <p class="lede">A few starting points — open any of these and it becomes your own editable copy immediately, with no account needed.</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="thumb">🔍</div>
+      <div class="body">
+        <h3>Murder Mystery Plot</h3>
+        <p>A branching mindmap of suspects, their traits, key clues, and a timeline — the kind of thing you'd sketch out plotting a whodunit or running a mystery game night.</p>
+        <div class="tags"><span class="tag">Mindmap</span><span class="tag">Brainstorming</span></div>
+        <a class="open" href="/app?example=murder-mystery">Open this example →</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="thumb">🗒️</div>
+      <div class="body">
+        <h3>Sprint Retro Board</h3>
+        <p>Three columns of sticky notes — what went well, what didn't, and what to do about it — the classic team retrospective format.</p>
+        <div class="tags"><span class="tag">Sticky notes</span><span class="tag">Team</span></div>
+        <a class="open" href="/app?example=sprint-retro">Open this example →</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="thumb">🔀</div>
+      <div class="body">
+        <h3>Support Ticket Flowchart</h3>
+        <p>A simple process diagram using swimlanes to show how a request moves between a customer and a support team, step by step.</p>
+        <div class="tags"><span class="tag">Swimlanes</span><span class="tag">Process</span></div>
+        <a class="open" href="/app?example=support-flow">Open this example →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="more">More examples are on the way — got an idea for one you'd like to see? <a href="/about">Let us know</a>.</div>
+</div>
+</body>
+</html>

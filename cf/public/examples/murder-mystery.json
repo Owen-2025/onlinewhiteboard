@@ -1,0 +1,35 @@
+{
+  "app": "whiteboard",
+  "version": 2,
+  "pages": [
+    {
+      "name": "Murder Mystery",
+      "panX": 0, "panY": 0, "zoom": 1,
+      "shapes": [
+        { "id": 1, "type": "mindnode", "text": "Who Killed Mr. Blackwood?", "fontSize": 16, "fontFamily": "sans", "fill": "#eef2ff", "stroke": "#4f6df5", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "root": true, "x": 40, "y": 356, "w": 280, "h": 52 },
+
+        { "id": 2, "type": "mindnode", "text": "Suspects", "fontSize": 14, "fontFamily": "sans", "fill": "#dbeafe", "stroke": "#3b82f6", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 1, "x": 420, "y": 80, "w": 122, "h": 44 },
+        { "id": 3, "type": "mindnode", "text": "Clues", "fontSize": 14, "fontFamily": "sans", "fill": "#dcfce7", "stroke": "#22c55e", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 1, "x": 420, "y": 520, "w": 110, "h": 44 },
+        { "id": 4, "type": "mindnode", "text": "Timeline", "fontSize": 14, "fontFamily": "sans", "fill": "#fef3c7", "stroke": "#d97706", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 1, "x": 420, "y": 720, "w": 122, "h": 44 },
+
+        { "id": 5, "type": "mindnode", "text": "Helena Goldsmith", "fontSize": 14, "fontFamily": "sans", "fill": "#fce7f3", "stroke": "#db2777", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 2, "x": 820, "y": 20, "w": 194, "h": 44 },
+        { "id": 6, "type": "mindnode", "text": "Frau Klaus", "fontSize": 14, "fontFamily": "sans", "fill": "#fce7f3", "stroke": "#db2777", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 2, "x": 820, "y": 140, "w": 140, "h": 44 },
+        { "id": 7, "type": "mindnode", "text": "The Priest", "fontSize": 14, "fontFamily": "sans", "fill": "#fce7f3", "stroke": "#db2777", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 2, "x": 820, "y": 260, "w": 140, "h": 44 },
+
+        { "id": 8, "type": "mindnode", "text": "Wears bright clothes", "fontSize": 14, "fontFamily": "sans", "fill": "#ede9fe", "stroke": "#8b5cf6", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 5, "x": 1220, "y": 0, "w": 230, "h": 44 },
+        { "id": 9, "type": "mindnode", "text": "Stands to inherit the estate", "fontSize": 14, "fontFamily": "sans", "fill": "#ede9fe", "stroke": "#8b5cf6", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 5, "x": 1220, "y": 55, "w": 302, "h": 44 },
+        { "id": 10, "type": "mindnode", "text": "Very religious", "fontSize": 14, "fontFamily": "sans", "fill": "#ffe4e6", "stroke": "#e11d48", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 6, "x": 1220, "y": 120, "w": 176, "h": 44 },
+        { "id": 11, "type": "mindnode", "text": "Argued with victim that night", "fontSize": 14, "fontFamily": "sans", "fill": "#ffe4e6", "stroke": "#e11d48", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 6, "x": 1220, "y": 175, "w": 311, "h": 44 },
+        { "id": 12, "type": "mindnode", "text": "Calculating", "fontSize": 14, "fontFamily": "sans", "fill": "#cffafe", "stroke": "#0891b2", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 7, "x": 1220, "y": 240, "w": 149, "h": 44 },
+        { "id": 13, "type": "mindnode", "text": "Always avoids eye contact", "fontSize": 14, "fontFamily": "sans", "fill": "#cffafe", "stroke": "#0891b2", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 7, "x": 1220, "y": 295, "w": 275, "h": 44 },
+
+        { "id": 14, "type": "mindnode", "text": "Bloody letter opener found", "fontSize": 14, "fontFamily": "sans", "fill": "#dcfce7", "stroke": "#22c55e", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 3, "x": 820, "y": 490, "w": 284, "h": 44 },
+        { "id": 15, "type": "mindnode", "text": "Missing spare key", "fontSize": 14, "fontFamily": "sans", "fill": "#dcfce7", "stroke": "#22c55e", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 3, "x": 820, "y": 560, "w": 203, "h": 44 },
+
+        { "id": 16, "type": "mindnode", "text": "10pm — dinner ends", "fontSize": 14, "fontFamily": "sans", "fill": "#fef3c7", "stroke": "#d97706", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 4, "x": 820, "y": 690, "w": 212, "h": 44 },
+        { "id": 17, "type": "mindnode", "text": "11pm — a scream is heard", "fontSize": 14, "fontFamily": "sans", "fill": "#fef3c7", "stroke": "#d97706", "strokeWidth": 0, "textColor": "#20232b", "opacity": 1, "parentId": 4, "x": 820, "y": 750, "w": 266, "h": 44 }
+      ]
+    }
+  ],
+  "pageIdx": 0
+}

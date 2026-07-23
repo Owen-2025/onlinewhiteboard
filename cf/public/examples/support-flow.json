@@ -1,0 +1,31 @@
+{
+  "app": "whiteboard",
+  "version": 2,
+  "pages": [
+    {
+      "name": "Support Ticket Flow",
+      "panX": 0, "panY": 0, "zoom": 1,
+      "shapes": [
+        { "id": 1, "type": "swimlane", "x1": 40, "y1": 40, "x2": 940, "y2": 200, "label": "Customer", "fill": "#eef2ff", "stroke": "#4f6df5", "strokeWidth": 2, "fontFamily": "sans", "opacity": 1 },
+        { "id": 2, "type": "swimlane", "x1": 40, "y1": 220, "x2": 940, "y2": 380, "label": "Support Team", "fill": "#fff7e6", "stroke": "#f08c00", "strokeWidth": 2, "fontFamily": "sans", "opacity": 1 },
+
+        { "id": 3, "type": "rect", "x1": 100, "y1": 90, "x2": 260, "y2": 150, "stroke": "#1c1c21", "fill": "#ffffff", "strokeWidth": 2, "opacity": 1 },
+        { "id": 4, "type": "text", "x": 112, "y": 108, "text": "Submits ticket", "fontSize": 14, "fontFamily": "sans", "stroke": "#1c1c21", "strokeWidth": 0, "opacity": 1, "w": 140, "h": 20 },
+
+        { "id": 5, "type": "rect", "x1": 700, "y1": 90, "x2": 860, "y2": 150, "stroke": "#1c1c21", "fill": "#ffffff", "strokeWidth": 2, "opacity": 1 },
+        { "id": 6, "type": "text", "x": 715, "y": 108, "text": "Receives reply", "fontSize": 14, "fontFamily": "sans", "stroke": "#1c1c21", "strokeWidth": 0, "opacity": 1, "w": 140, "h": 20 },
+
+        { "id": 7, "type": "rect", "x1": 300, "y1": 270, "x2": 460, "y2": 330, "stroke": "#1c1c21", "fill": "#ffffff", "strokeWidth": 2, "opacity": 1 },
+        { "id": 8, "type": "text", "x": 320, "y": 288, "text": "Triage ticket", "fontSize": 14, "fontFamily": "sans", "stroke": "#1c1c21", "strokeWidth": 0, "opacity": 1, "w": 130, "h": 20 },
+
+        { "id": 9, "type": "rect", "x1": 520, "y1": 270, "x2": 680, "y2": 330, "stroke": "#1c1c21", "fill": "#ffffff", "strokeWidth": 2, "opacity": 1 },
+        { "id": 10, "type": "text", "x": 535, "y": 288, "text": "Resolve issue", "fontSize": 14, "fontFamily": "sans", "stroke": "#1c1c21", "strokeWidth": 0, "opacity": 1, "w": 130, "h": 20 },
+
+        { "id": 11, "type": "arrow", "x1": 260, "y1": 150, "x2": 380, "y2": 270, "stroke": "#1c1c21", "fill": "transparent", "strokeWidth": 2, "opacity": 1 },
+        { "id": 12, "type": "arrow", "x1": 460, "y1": 300, "x2": 520, "y2": 300, "stroke": "#1c1c21", "fill": "transparent", "strokeWidth": 2, "opacity": 1 },
+        { "id": 13, "type": "arrow", "x1": 680, "y1": 270, "x2": 780, "y2": 150, "stroke": "#1c1c21", "fill": "transparent", "strokeWidth": 2, "opacity": 1 }
+      ]
+    }
+  ],
+  "pageIdx": 0
+}
