@@ -202,7 +202,8 @@
   body.presenting .style-panel,
   body.presenting .zoom-bar,
   body.presenting .history-bar,
-  body.presenting .menu-wrap { display: none; }
+  body.presenting .menu-wrap,
+  body.presenting .export-wrap { display: none; }
 
   /* ---------- Bottom-left: zoom ---------- */
   .zoom-bar {
@@ -244,9 +245,26 @@
   /* ---------- Menu ---------- */
   .menu-wrap { position: fixed; top: 14px; left: 14px; z-index: 25; }
 
+  /* ---------- Export button ---------- */
+  .export-wrap { position: fixed; top: 14px; right: 14px; z-index: 26; }
+  .export-btn {
+    display: flex; align-items: center; gap: 7px; height: 44px; padding: 0 16px;
+    background: var(--accent); color: #fff; border: none; border-radius: var(--radius);
+    box-shadow: var(--shadow); cursor: pointer; font-size: 13.5px; font-weight: 600;
+  }
+  .export-btn:hover { filter: brightness(1.08); }
+  .export-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .export-dropdown {
+    position: absolute; top: 52px; right: 0; width: 240px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 6px; display: none; flex-direction: column;
+  }
+  .export-dropdown.open { display: flex; }
+
   /* ---------- Active users ---------- */
   .active-users {
-    position: fixed; top: 14px; right: 14px; z-index: 25;
+    position: fixed; top: 14px; right: 130px; z-index: 25;
     display: none; align-items: center; gap: 6px;
     background: var(--panel); border: 1px solid var(--border);
     border-radius: 99px; box-shadow: var(--shadow); padding: 6px 10px 6px 6px;
@@ -320,6 +338,22 @@
 
 <!-- Active users -->
 <div id="activeUsers" class="active-users"></div>
+
+<!-- Export -->
+<div class="export-wrap">
+  <button class="export-btn" id="exportBtn">
+    <svg viewBox="0 0 24 24"><path d="M12 3v13m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+    Export
+  </button>
+  <div class="export-dropdown" id="exportDropdown">
+    <button class="menu-item" data-forward="exportPng"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15.5l-5-5L5.5 21"/></svg>PNG image <span class="shortcut">quick share</span></button>
+    <button class="menu-item" data-forward="exportSvg"><svg viewBox="0 0 24 24"><path d="M4 18C7.5 6 16.5 6 20 18"/><circle cx="4" cy="18" r="1.8"/><circle cx="20" cy="18" r="1.8"/></svg>SVG vector <span class="shortcut">for design tools</span></button>
+    <button class="menu-item" data-forward="exportPdf"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>PDF document <span class="shortcut">all pages</span></button>
+    <div class="menu-sep"></div>
+    <button class="menu-item" data-forward="exportJson"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Save file <span class="shortcut">reopen anytime</span></button>
+    <button class="menu-item" data-forward="copyPng"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy as image <span class="shortcut">paste elsewhere</span></button>
+  </div>
+</div>
 
 <!-- Menu -->
 <div class="menu-wrap">
@@ -2159,6 +2193,7 @@ addEventListener('keydown', e => {
     if (document.getElementById('newBoardOverlay').classList.contains('open')) { closeNewBoardModal(); return; }
     if (document.getElementById('shortcutsOverlay').classList.contains('open')) { document.getElementById('shortcutsOverlay').classList.remove('open'); return; }
     if (document.getElementById('moreShapesFlyout').classList.contains('open')) { document.getElementById('moreShapesFlyout').classList.remove('open'); return; }
+    if (document.getElementById('exportDropdown').classList.contains('open')) { document.getElementById('exportDropdown').classList.remove('open'); return; }
     if (presenting) { togglePresenter(); return; }
     state.selectedIds.clear(); render(); return;
   }
@@ -2294,6 +2329,20 @@ const menuDropdown = document.getElementById('menuDropdown');
 menuBtn.onclick = e => { e.stopPropagation(); menuDropdown.classList.toggle('open'); };
 addEventListener('click', e => {
   if (!menuDropdown.contains(e.target) && e.target !== menuBtn) menuDropdown.classList.remove('open');
+});
+
+/* ---------- export button (forwards to the existing hidden menu actions) ---------- */
+const exportBtn = document.getElementById('exportBtn');
+const exportDropdown = document.getElementById('exportDropdown');
+exportBtn.onclick = e => { e.stopPropagation(); exportDropdown.classList.toggle('open'); };
+addEventListener('click', e => {
+  if (!exportDropdown.contains(e.target) && e.target !== exportBtn && !exportBtn.contains(e.target)) exportDropdown.classList.remove('open');
+});
+document.querySelectorAll('#exportDropdown [data-forward]').forEach(b => {
+  b.onclick = () => {
+    document.getElementById(b.dataset.forward).click();
+    exportDropdown.classList.remove('open');
+  };
 });
 
 function download(name, blobOrUrl) {
